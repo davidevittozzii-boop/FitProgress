@@ -1,0 +1,62 @@
+body { background-color: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+.nav-btn { transition: all 0.2s; white-space: nowrap; }
+.nav-btn.active { background-color: #3b82f6; color: white; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5); font-weight: bold; }
+.nav-btn.inactive { background-color: #1e293b; color: #94a3b8; }
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+.editable-input { background: transparent; border: none; border-bottom: 1px solid #3b82f6; color: white; width: 40px; text-align: center; outline: none; }
+.editable-input:focus { background: rgba(59,130,246,0.2); }
+
+/* ACCORDION (usato per Profilo, Liste Esercizi e Libreria) */
+.accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+.accordion-content.open { max-height: 800px; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.sortable-ghost { opacity: 0.4; background-color: #1e293b; }
+.bottom-nav-btn { transition: color 0.2s ease, transform 0.1s ease; }
+.bottom-nav-btn:active { transform: scale(0.95); }
+.bottom-nav-active { color: #3b82f6 !important; }
+.bottom-nav-inactive { color: #64748b; }
+
+/* === STILE MAPPA MUSCOLARE === */
+#muscle-modal { transition: opacity 0.3s ease; }
+
+.map-container { 
+    position: relative; 
+    width: 100%; 
+    max-width: 320px; 
+    margin: 0 auto; 
+    border-radius: 12px; 
+    overflow: hidden; 
+    background: #1e293b; 
+    border: 1px solid #334155; 
+}
+.map-container img { 
+    width: 100%; 
+    display: block; 
+    object-fit: cover; 
+}
+
+.muscle-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden; 
+    opacity: 0;
+    mix-blend-mode: multiply; 
+    transition: all 0.4s ease;
+    pointer-events: none;
+}
+
+.muscle-layer img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: -1000px; 
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }

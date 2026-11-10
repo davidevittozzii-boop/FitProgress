@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestore Schede e Allenamento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="pb-24">
+    <div id="top-header" class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800 shadow-lg">
+        <div class="flex justify-between items-center px-4 py-4">
+            <h1 id="main-header-title" class="text-xl font-bold text-slate-100 truncate">La Mia Scheda</h1>
+            <button id="header-action-btn" onclick="openRoutinesManager()" class="hidden bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold items-center gap-1.5 transition-colors">
+                <i class="fas fa-layer-group"></i> Schede
+            </button>
+        </div>
+        <div id="dynamic-nav-container" class="hidden flex overflow-x-auto gap-2 px-4 no-scrollbar pb-3 items-center"></div>
+    </div>
+
+    <div class="max-w-md mx-auto p-4 relative">
+        
+        <!-- PROFILO -->
+        <div id="main-tab-profilo-content" class="tab-content">
+            <h2 class="text-lg font-bold text-blue-400 mb-4">Area Personale</h2>
+            
+            <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-xl mb-6 overflow-hidden">
+                <button onclick="toggleAccordion('prof-data-acc')" class="w-full flex justify-between items-center p-4 bg-slate-800 hover:bg-slate-700 text-left font-bold text-slate-200 transition-colors outline-none">
+                    <span><i class="fas fa-user-edit mr-2 text-blue-400"></i>Dati Personali e Misure</span>
+                    <i class="fas fa-chevron-down text-slate-400 transition-transform" id="prof-data-acc-icon"></i>
+                </button>
+                
+                <div id="prof-data-acc" class="accordion-content bg-slate-900/50">
+                    <div class="p-4">
+                        <div class="grid grid-cols-2 gap-3 mb-6">
+                            <div><label class="block text-xs text-slate-400 mb-1">Nome</label><input type="text" id="prof-nome" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
+                            <div><label class="block text-xs text-slate-400 mb-1">Cognome</label><input type="text" id="prof-cognome" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
+                            <div><label class="block text-xs text-slate-400 mb-1">Età</label><input type="number" id="prof-eta" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
+                            <div><label class="block text-xs text-slate-400 mb-1">Altezza (cm)</label><input type="number" id="prof-altezza" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
+                            <div class="col-span-2"><label class="block text-xs text-slate-400 mb-1">Peso (Kg)</label><input type="number" step="0.1" id="prof-peso" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
+                        </div>
+
+                        <h3 class="text-sm font-bold text-slate-300 mb-3 border-b border-slate-700 pb-2"><i class="fas fa-ruler mr-2 text-blue-400"></i>Aggiorna Misure (cm)</h3>
+                        <div class="mb-4"><label class="block text-xs text-slate-400 mb-1">Data Misurazione</label><input type="date" id="measure-date" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
+                        <div class="grid grid-cols-3 gap-3 mb-6">
+                            <div><label class="block text-[10px] text-slate-400 uppercase mb-1">Spalle</label><input type="number" step="0.1" id="meas-spalle" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center outline-none"></div>
+                            <div><label class="block text-[10px] text-slate-400 uppercase mb-1">Petto</label><input type="number" step="0.1" id="meas-petto" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center outline-none"></div>
+                            <div><label class="block text-[10px] text-slate-400 uppercase mb-1">Braccia</label><input type="number" step="0.1" id="meas-braccia" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center outline-none"></div>
+                            <div><label class="block text-[10px] text-slate-400 uppercase mb-1">Vita</label><input type="number" step="0.1" id="meas-vita" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center outline-none"></div>
+                            <div><label class="block text-[10px] text-slate-400 uppercase mb-1">Fianchi</label><input type="number" step="0.1" id="meas-fianchi" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center outline-none"></div>
+                            <div><label class="block text-[10px] text-slate-400 uppercase mb-1">Cosce</label><input type="number" step="0.1" id="meas-cosce" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center outline-none"></div>
+                            <div><label class="block text-[10px] text-slate-400 uppercase mb-1">Polpacci</label><input type="number" step="0.1" id="meas-polpacci" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center outline-none"></div>
+                        </div>
+
+                        <button onclick="salvaProfiloEMisure()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-colors flex justify-center items-center gap-2"><i class="fas fa-save"></i> Salva Dati</button>
+                        <p id="prof-msg" class="text-xs text-green-400 text-center hidden mt-2">Dati Salvati!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CALENDARIO -->
+            <div class="mb-6">
+                <div class="flex items-center gap-2 mb-4"><div class="h-px bg-slate-700 flex-1"></div><h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest"><i class="fas fa-calendar-alt mr-2"></i>Calendario Allenamenti</h3><div class="h-px bg-slate-700 flex-1"></div></div>
+                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <button onclick="changeCalendarMonth(-1)" class="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300"><i class="fas fa-chevron-left"></i></button>
+                        <div class="flex items-center gap-1 font-bold text-slate-100 text-lg">
+                            <select id="cal-month-select" onchange="jumpToDate()" class="bg-transparent outline-none cursor-pointer capitalize text-right appearance-none hover:text-blue-400 transition-colors">
+                                <option value="0" class="bg-slate-800 text-white">Gennaio</option><option value="1" class="bg-slate-800 text-white">Febbraio</option><option value="2" class="bg-slate-800 text-white">Marzo</option><option value="3" class="bg-slate-800 text-white">Aprile</option><option value="4" class="bg-slate-800 text-white">Maggio</option><option value="5" class="bg-slate-800 text-white">Giugno</option><option value="6" class="bg-slate-800 text-white">Luglio</option><option value="7" class="bg-slate-800 text-white">Agosto</option><option value="8" class="bg-slate-800 text-white">Settembre</option><option value="9" class="bg-slate-800 text-white">Ottobre</option><option value="10" class="bg-slate-800 text-white">Novembre</option><option value="11" class="bg-slate-800 text-white">Dicembre</option>
+                            </select>
+                            <select id="cal-year-select" onchange="jumpToDate()" class="bg-transparent outline-none cursor-pointer text-left appearance-none hover:text-blue-400 transition-colors"></select>
+                        </div>
+                        <button onclick="changeCalendarMonth(1)" class="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <div class="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 mb-2"><div>L</div><div>M</div><div>M</div><div>G</div><div>V</div><div>S</div><div>D</div></div>
+                    <div id="monthly-calendar-grid" class="grid grid-cols-7 gap-2 text-sm"></div>
+                    <div id="cal-selected-info" class="hidden mt-4 bg-slate-900 p-3 rounded-xl border border-slate-700 flex-col items-center gap-2">
+                        <span id="cal-selected-date" class="text-slate-300 font-semibold text-sm"></span>
+                        <button id="cal-view-workout-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-bold flex justify-center items-center gap-2 transition-colors"><i class="fas fa-eye"></i> Vedi Allenamento</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STORICO MISURE E DATI -->
+            <div class="mb-6">
+                <div class="flex items-center gap-2 mb-4"><div class="h-px bg-slate-700 flex-1"></div><h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest">Storico Misure</h3><div class="h-px bg-slate-700 flex-1"></div></div>
+                <div id="measurements-history" class="space-y-3"></div>
+            </div>
+
+            <div class="mb-6">
+                <div class="flex items-center gap-2 mb-4"><div class="h-px bg-slate-700 flex-1"></div><h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest">Gestione Dati</h3><div class="h-px bg-slate-700 flex-1"></div></div>
+                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                    <div class="space-y-3">
+                        <button onclick="openExportModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 rounded-lg transition-colors flex justify-center items-center gap-2"><i class="fas fa-file-export"></i> Esporta Backup</button>
+                        <button onclick="openImportModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 rounded-lg transition-colors flex justify-center items-center gap-2"><i class="fas fa-file-import"></i> Importa Backup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCHEDA -->
+        <div id="main-tab-workout-content" class="tab-content active"><div id="workout-container"></div></div>
+        
+        <!-- PROGRESSIONI -->
+        <div id="main-tab-progressioni-content" class="tab-content">
+            <div class="mb-4 bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-end gap-2">
+                <div class="flex-1">
+                    <label class="block text-sm text-slate-400 mb-2">Data Allenamento</label>
+                    <input type="date" id="prog-date" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500" onchange="renderProgressioni()">
+                </div>
+                <button onclick="openMuscleMap()" class="bg-blue-600 hover:bg-blue-500 text-white rounded-lg p-2 px-4 shadow transition-colors flex items-center justify-center shrink-0 h-[42px]"><i class="fas fa-calendar-alt mr-2"></i> Mappa</button>
+            </div>
+            <div id="prog-list"></div>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-0 w-full bg-slate-900 border-t border-slate-800 flex justify-around items-center pb-4 pt-2 z-50 shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.3)]">
+        <button onclick="switchMainTab('profilo')" id="nav-btn-profilo" class="bottom-nav-btn bottom-nav-inactive flex flex-col items-center p-2 w-1/3 outline-none"><i class="fas fa-user text-xl mb-1"></i><span class="text-[10px] font-bold uppercase tracking-widest">Profilo</span></button>
+        <button onclick="switchMainTab('workout')" id="nav-btn-workout" class="bottom-nav-btn bottom-nav-active flex flex-col items-center p-2 w-1/3 outline-none"><i class="fas fa-dumbbell text-xl mb-1"></i><span class="text-[10px] font-bold uppercase tracking-widest">Scheda</span></button>
+        <button onclick="switchMainTab('progressioni')" id="nav-btn-progressioni" class="bottom-nav-btn bottom-nav-inactive flex flex-col items-center p-2 w-1/3 outline-none"><i class="fas fa-chart-line text-xl mb-1"></i><span class="text-[10px] font-bold uppercase tracking-widest">Progressi</span></button>
+    </nav>
+
+    <!-- MODALE FILTRO DOMS (AGGIORNATO CON CHECKBOX MULTIPLE) -->
+    <div id="doms-modal" class="fixed inset-0 bg-slate-900/95 z-[115] hidden flex-col items-center pt-20 px-4">
+        <div class="w-full max-w-md bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-100"><i class="fas fa-filter text-blue-400 mr-2"></i>Filtro DOMS</h2>
+                <button onclick="closeDomsModal()" class="text-slate-400 hover:text-white p-1 text-2xl"><i class="fas fa-times"></i></button>
+            </div>
+            <p class="text-sm text-slate-400 mb-4">Seleziona i muscoli doloranti. Verranno sostituiti TUTTI gli esercizi che li coinvolgono con quelli degli altri distretti odierni.</p>
+            
+            <div class="space-y-4 mb-6">
+                <!-- Checkbox a griglia per i muscoli -->
+                <div id="doms-checkboxes" class="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto no-scrollbar p-3 bg-slate-900 rounded-lg border border-slate-700">
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-chest-upper" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Petto Alto</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-chest-lower" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Petto Basso</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-shoulder" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Spalle Ant/Lat</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-shoulder" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Spalle Post.</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-traps" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Trapezi</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-lats" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Dorsali</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-lowerback" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Lombari</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-biceps" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Bicipiti</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-triceps" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Tricipiti</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-forearm" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Avambracci</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-abs" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Addome</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-obliques" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Obliqui</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-quads" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Quadricipiti</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-hamstrings" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Femorali</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-glutes" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Glutei</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-adductors" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Adduttori</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-calves" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Polpacci</label>
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button onclick="removeDomsFilter()" class="w-1/3 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-2 rounded-lg transition-colors">Rimuovi</button>
+                <button onclick="applyDomsFilter()" class="w-2/3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 rounded-lg transition-colors">Applica Filtro</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE SOSTITUISCI MACCHINARIO -->
+    <div id="swap-modal" class="fixed inset-0 bg-slate-900/95 z-[125] hidden flex-col items-center pt-20 px-4 overflow-y-auto pb-10">
+        <div class="w-full max-w-md bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-100"><i class="fas fa-exchange-alt text-blue-400 mr-2"></i>Sostituisci Macchinario</h2>
+                <button onclick="closeSwapModal()" class="text-slate-400 hover:text-white p-1 text-2xl"><i class="fas fa-times"></i></button>
+            </div>
+            <p class="text-sm text-slate-400 mb-4">Seleziona un'alternativa per lo stesso gruppo muscolare.</p>
+            <div id="swap-list" class="space-y-2 max-h-96 overflow-y-auto pr-1 no-scrollbar"></div>
+        </div>
+    </div>
+
+    <!-- GLI ALTRI MODALI -->
+    <div id="backup-modal" class="fixed inset-0 bg-slate-900/95 z-[200] hidden flex-col items-center pt-20 px-4">
+        <div class="w-full max-w-md bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-4"><h2 id="backup-title" class="text-xl font-bold text-slate-100">Esporta Dati</h2><button onclick="closeBackupModal()" class="text-slate-400 hover:text-white p-1 text-2xl"><i class="fas fa-times"></i></button></div>
+            <textarea id="backup-text" class="w-full h-40 bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-300 text-[10px] font-mono outline-none mb-4 focus:border-blue-500"></textarea>
+            <button id="backup-action-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-colors">Copia negli appunti</button>
+        </div>
+    </div>
+
+    <div id="routines-modal" class="fixed inset-0 bg-slate-900/95 z-[130] hidden flex-col items-center pt-10 px-4 overflow-y-auto pb-10">
+        <div class="w-full max-w-md">
+            <div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold text-slate-100">Le Tue Schede</h2><button onclick="closeRoutinesManager()" class="text-slate-400 hover:text-white p-2 text-2xl"><i class="fas fa-times"></i></button></div>
+            <div id="routines-list-container" class="space-y-3 mb-6"></div>
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <h3 class="text-sm font-bold text-slate-200 mb-3"><i class="fas fa-plus-circle mr-1 text-blue-400"></i> Crea Nuova Scheda</h3>
+                <div class="space-y-3">
+                    <input type="text" id="new-routine-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none" placeholder="Nome Scheda">
+                    <select id="new-routine-days" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none"><option value="1">1 Giorno</option><option value="2">2 Giorni</option><option value="3">3 Giorni</option><option value="4" selected>4 Giorni</option></select>
+                    <button onclick="createNewRoutine()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg transition-colors">Crea</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-ex-modal" class="fixed inset-0 bg-slate-900/95 z-[110] hidden flex-col items-center pt-20 px-4">
+        <div class="w-full max-w-md bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-slate-100">Nuovo Esercizio</h2><button onclick="closeAddModal()" class="text-slate-400 hover:text-white p-1 text-2xl"><i class="fas fa-times"></i></button></div>
+            <input type="hidden" id="add-ex-day">
+            <div class="space-y-3 mb-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Nome Esercizio</label>
+                    <div class="relative flex gap-2">
+                        <input type="text" id="add-ex-name" oninput="handleExerciseSearch(this.value)" autocomplete="off" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500" placeholder="Cerca...">
+                        <button onclick="openLibraryModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 rounded-lg border border-slate-600 transition-colors shadow shrink-0"><i class="fas fa-book-open"></i></button>
+                        <div id="add-ex-dropdown" class="absolute z-20 w-full top-full bg-slate-700 border border-slate-600 rounded-lg mt-1 hidden max-h-40 overflow-y-auto shadow-xl"></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="block text-xs text-slate-400 mb-1">Serie</label><input type="number" id="add-ex-sets" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none" placeholder="3"></div>
+                    <div><label class="block text-xs text-slate-400 mb-1">Ripetizioni</label><input type="text" id="add-ex-reps" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none" placeholder="10"></div>
+                </div>
+                <div><label class="block text-xs text-slate-400 mb-1">Recupero (secondi)</label><input type="number" id="add-ex-rest" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none" placeholder="90"></div>
+            </div>
+            <button onclick="saveNewExercise()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg transition-colors">Aggiungi</button>
+        </div>
+    </div>
+
+    <div id="library-modal" class="fixed inset-0 bg-slate-900/95 z-[120] hidden flex-col pt-10 px-4 overflow-y-auto pb-10">
+        <div class="w-full max-w-md mx-auto relative">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-slate-100"><i class="fas fa-book-open text-blue-400 mr-2"></i>Libreria Esercizi</h2>
+                <button onclick="closeLibraryModal()" class="text-slate-400 hover:text-white p-2 text-2xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="library-list-container" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-900/95 z-[150] hidden flex-col items-center justify-center px-4">
+        <div class="w-full max-w-sm bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-2xl text-center">
+            <div class="text-red-500 text-4xl mb-4"><i class="fas fa-exclamation-triangle"></i></div>
+            <h2 id="confirm-msg" class="text-lg font-bold text-slate-100 mb-6">Sei sicuro?</h2>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeConfirm()" class="px-6 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 font-semibold transition-colors">No</button>
+                <button onclick="confirmYes()" class="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 font-semibold transition-colors">Sì</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAPPA MUSCOLARE -->
+    <div id="muscle-modal" class="fixed inset-0 bg-slate-900/95 z-[100] hidden flex-col items-center pt-10 px-4 overflow-y-auto pb-10">
+        <div class="w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-slate-100"><i class="fas fa-street-view text-blue-400 mr-2"></i>Resoconto</h2>
+                <button onclick="closeMuscleMap()" class="text-slate-400 hover:text-white p-2 text-2xl"><i class="fas fa-times"></i></button>
+            </div>
+            <p class="text-sm text-slate-400 mb-4 text-center">Periodo: <span id="map-date-display" class="text-white font-bold text-sm ml-2"></span></p>
+            <div class="flex justify-center gap-2 mb-6">
+                <button id="btn-range-1" onclick="setMapRange(1)" class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors bg-blue-600 text-white shadow">Giorno</button>
+                <button id="btn-range-3" onclick="setMapRange(3)" class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors bg-slate-700 text-slate-300">3 Giorni</button>
+                <button id="btn-range-7" onclick="setMapRange(7)" class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors bg-slate-700 text-slate-300">7 Giorni</button>
+            </div>
+            
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl mb-6">
+                <div class="map-container">
+                    <img src="manichino.jpg" alt="Manichino Base">
+                    <div id="layer-chest-upper" class="muscle-layer"><img src="petto_alto.png"></div>
+                    <div id="layer-chest-lower" class="muscle-layer"><img src="petto_basso.png"></div>
+                    <div id="layer-shoulders-front" class="muscle-layer"><img src="spalle_fronte.png"></div>
+                    <div id="layer-arms-front" class="muscle-layer"><img src="braccia_fronte.png"></div>
+                    <div id="layer-abs" class="muscle-layer"><img src="addome.png"></div>
+                    <div id="layer-quads" class="muscle-layer"><img src="quadricipiti.png"></div>
+                    <div id="layer-adductors" class="muscle-layer"><img src="adduttori.png"></div>
+                    <div id="layer-back" class="muscle-layer"><img src="schiena.png"></div>
+                    <div id="layer-lowerback" class="muscle-layer"><img src="lombare.png"></div>
+                    <div id="layer-shoulders-rear" class="muscle-layer"><img src="spalle_retro.png"></div>
+                    <div id="layer-arms-rear" class="muscle-layer"><img src="braccia_retro.png"></div>
+                    <div id="layer-glutes" class="muscle-layer"><img src="glutei.png"></div>
+                    <div id="layer-hamstrings" class="muscle-layer"><img src="femorali.png"></div>
+                    <div id="layer-calves" class="muscle-layer"><img src="polpacci.png"></div>
+                </div>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 mb-6">
+                <h3 class="text-sm font-bold text-slate-300 mb-3 text-center">Intensità Accumulata</h3>
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-center gap-3"><div class="w-4 h-4 rounded bg-[#ef4444]"></div><span class="text-sm text-slate-400">Alta (Target Principale)</span></div>
+                    <div class="flex items-center gap-3"><div class="w-4 h-4 rounded bg-[#f97316]"></div><span class="text-sm text-slate-400">Media (Coinvolgimento)</span></div>
+                    <div class="flex items-center gap-3"><div class="w-4 h-4 rounded bg-[#facc15]"></div><span class="text-sm text-slate-400">Bassa (Stimolo Indiretto)</span></div>
+                </div>
+            </div>
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <h3 class="text-sm font-bold text-slate-200 mb-2 border-b border-slate-700 pb-2"><i class="fas fa-list mr-2 text-blue-400"></i>Esercizi Eseguiti</h3>
+                <div id="map-exercise-list" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
