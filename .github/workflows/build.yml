@@ -25,14 +25,24 @@ jobs:
     - name: Prepara ambiente Android
       run: |
         npm install -g cordova
-        cordova create myapp com.esempio.app MiaApp
+        # Crea l'app con ID com.fitprogress.app e nome "Fit Progress"
+        cordova create myapp com.fitprogress.app "Fit Progress"
+        
+        # Copia i file web dentro l'app
         cp -r * myapp/www/ || true
+        
         cd myapp
+        
+        # Se esiste icon.png, la imposta come icona ufficiale nell'app
+        if [ -f www/icon.png ]; then
+          sed -i '/<\/widget>/i \    <icon src="www/icon.png" />' config.xml
+        fi
+        
         cordova platform add android
         cordova build android --debug
 
     - name: Salva il file APK scaricabile
       uses: actions/upload-artifact@v4
       with:
-        name: MiaApp-Debug
+        name: FitProgress-Debug
         path: myapp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
