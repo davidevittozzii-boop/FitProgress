@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestore Schede e Allenamento</title>
+    <title>Gestore Schede e Alimentazione</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="pb-24">
+    <!-- HEADER SUPERIORE -->
     <div id="top-header" class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800 shadow-lg">
         <div class="flex justify-between items-center px-4 py-4">
             <h1 id="main-header-title" class="text-xl font-bold text-slate-100 truncate">La Mia Scheda</h1>
@@ -23,27 +24,52 @@
 
     <div class="max-w-md mx-auto p-4 relative">
         
-        <!-- PROFILO -->
+        <!-- ==================== 1. PROFILO ==================== -->
         <div id="main-tab-profilo-content" class="tab-content">
             <h2 class="text-lg font-bold text-blue-400 mb-4">Area Personale</h2>
             
             <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-xl mb-6 overflow-hidden">
                 <button onclick="toggleAccordion('prof-data-acc')" class="w-full flex justify-between items-center p-4 bg-slate-800 hover:bg-slate-700 text-left font-bold text-slate-200 transition-colors outline-none">
-                    <span><i class="fas fa-user-edit mr-2 text-blue-400"></i>Dati Personali e Misure</span>
+                    <span><i class="fas fa-user-edit mr-2 text-blue-400"></i>Dati Personali, Obiettivi e Misure</span>
                     <i class="fas fa-chevron-down text-slate-400 transition-transform" id="prof-data-acc-icon"></i>
                 </button>
                 
                 <div id="prof-data-acc" class="accordion-content bg-slate-900/50">
                     <div class="p-4">
+                        <h3 class="text-sm font-bold text-slate-300 mb-3 border-b border-slate-700 pb-2"><i class="fas fa-id-card mr-2 text-blue-400"></i>Anagrafica e Parametri Metabolici</h3>
                         <div class="grid grid-cols-2 gap-3 mb-6">
                             <div><label class="block text-xs text-slate-400 mb-1">Nome</label><input type="text" id="prof-nome" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
                             <div><label class="block text-xs text-slate-400 mb-1">Cognome</label><input type="text" id="prof-cognome" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
-                            <div><label class="block text-xs text-slate-400 mb-1">Età</label><input type="number" id="prof-eta" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
-                            <div><label class="block text-xs text-slate-400 mb-1">Altezza (cm)</label><input type="number" id="prof-altezza" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
-                            <div class="col-span-2"><label class="block text-xs text-slate-400 mb-1">Peso (Kg)</label><input type="number" step="0.1" id="prof-peso" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Sesso Biologico</label>
+                                <select id="prof-sesso" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500">
+                                    <option value="M">Uomo</option>
+                                    <option value="F">Donna</option>
+                                </select>
+                            </div>
+                            <div><label class="block text-xs text-slate-400 mb-1">Età (anni)</label><input type="number" id="prof-eta" placeholder="Es. 25" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
+                            <div><label class="block text-xs text-slate-400 mb-1">Altezza (cm)</label><input type="number" id="prof-altezza" placeholder="Es. 175" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
+                            <div><label class="block text-xs text-slate-400 mb-1">Peso Attuale (Kg)</label><input type="number" step="0.1" id="prof-peso" placeholder="Es. 72.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
+                            <div class="col-span-2">
+                                <label class="block text-xs text-slate-400 mb-1">Stile di Vita Quotidiano (Esclusa Palestra)</label>
+                                <select id="prof-attivita" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500">
+                                    <option value="1.2">Sedentario (Ufficio, studio, poco movimento)</option>
+                                    <option value="1.375" selected>Leggermente Attivo (Passeggiate, lavori domestici)</option>
+                                    <option value="1.55">Moderatamente Attivo (In piedi spesso, es. commesso/cameriere)</option>
+                                    <option value="1.725">Molto Attivo (Lavoro fisico pesante, cantiere, magazzino)</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-xs text-slate-400 mb-1">Obiettivo Fisico</label>
+                                <select id="prof-obiettivo" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500">
+                                    <option value="cut">Dimagrimento e Definizione (-20% kcal)</option>
+                                    <option value="maint" selected>Mantenimento / Ricomposizione Corporea</option>
+                                    <option value="bulk">Aumento Massa Muscolare (+15% kcal)</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <h3 class="text-sm font-bold text-slate-300 mb-3 border-b border-slate-700 pb-2"><i class="fas fa-ruler mr-2 text-blue-400"></i>Aggiorna Misure (cm)</h3>
+                        <h3 class="text-sm font-bold text-slate-300 mb-3 border-b border-slate-700 pb-2"><i class="fas fa-ruler mr-2 text-blue-400"></i>Aggiorna Circonferenze (cm)</h3>
                         <div class="mb-4"><label class="block text-xs text-slate-400 mb-1">Data Misurazione</label><input type="date" id="measure-date" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500"></div>
                         <div class="grid grid-cols-3 gap-3 mb-6">
                             <div><label class="block text-[10px] text-slate-400 uppercase mb-1">Spalle</label><input type="number" step="0.1" id="meas-spalle" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center outline-none"></div>
@@ -55,13 +81,13 @@
                             <div><label class="block text-[10px] text-slate-400 uppercase mb-1">Polpacci</label><input type="number" step="0.1" id="meas-polpacci" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center outline-none"></div>
                         </div>
 
-                        <button onclick="salvaProfiloEMisure()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-colors flex justify-center items-center gap-2"><i class="fas fa-save"></i> Salva Dati</button>
-                        <p id="prof-msg" class="text-xs text-green-400 text-center hidden mt-2">Dati Salvati!</p>
+                        <button onclick="salvaProfiloEMisure()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-colors flex justify-center items-center gap-2 shadow-lg"><i class="fas fa-save"></i> Salva Dati e Ricalcola Macro</button>
+                        <p id="prof-msg" class="text-xs text-green-400 text-center hidden mt-2 font-semibold">Dati e Fabbisogno Aggiornati!</p>
                     </div>
                 </div>
             </div>
 
-            <!-- CALENDARIO -->
+            <!-- CALENDARIO ALLENAMENTI -->
             <div class="mb-6">
                 <div class="flex items-center gap-2 mb-4"><div class="h-px bg-slate-700 flex-1"></div><h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest"><i class="fas fa-calendar-alt mr-2"></i>Calendario Allenamenti</h3><div class="h-px bg-slate-700 flex-1"></div></div>
                 <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl">
@@ -84,7 +110,7 @@
                 </div>
             </div>
 
-            <!-- STORICO MISURE E DATI -->
+            <!-- STORICO MISURE E BACKUP -->
             <div class="mb-6">
                 <div class="flex items-center gap-2 mb-4"><div class="h-px bg-slate-700 flex-1"></div><h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest">Storico Misure</h3><div class="h-px bg-slate-700 flex-1"></div></div>
                 <div id="measurements-history" class="space-y-3"></div>
@@ -101,60 +127,481 @@
             </div>
         </div>
 
-        <!-- SCHEDA -->
+        <!-- ==================== 2. SCHEDA ==================== -->
         <div id="main-tab-workout-content" class="tab-content active"><div id="workout-container"></div></div>
         
-        <!-- PROGRESSIONI -->
+        <!-- ==================== 3. ALIMENTAZIONE ==================== -->
+        <div id="main-tab-alimentazione-content" class="tab-content">
+            <!-- Barra Superiore Data + Tasto DIARIO -->
+            <div class="mb-4 bg-slate-800 p-3.5 rounded-xl border border-slate-700 flex items-end gap-2 shadow-lg">
+                <div class="flex-1">
+                    <label class="block text-xs text-slate-400 mb-1">Data Alimentazione</label>
+                    <input type="date" id="diet-date" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-sm outline-none focus:border-blue-500" onchange="renderNutritionDashboard()">
+                </div>
+                <button onclick="openFoodDiaryModal()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg px-4 py-2 shadow transition-colors flex items-center justify-center shrink-0 h-[38px] text-sm">
+                    <i class="fas fa-book mr-2"></i> Diario
+                </button>
+            </div>
+
+            <!-- Avviso se mancano i dati nel profilo -->
+            <div id="diet-profile-warning" class="hidden mb-4 bg-amber-900/30 border border-amber-600/50 rounded-xl p-3 text-xs text-amber-200 flex items-center justify-between gap-3">
+                <div><i class="fas fa-info-circle text-amber-400 mr-1"></i> Inserisci Peso, Altezza ed Età nel <b>Profilo</b> per calcolare i tuoi macro personalizzati.</div>
+                <button onclick="switchMainTab('profilo'); toggleAccordion('prof-data-acc');" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-1.5 rounded-lg shrink-0">Vai</button>
+            </div>
+
+            <!-- CRUSCOTTO CALORIE E MACRO -->
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl mb-4">
+                <div class="flex justify-between items-baseline mb-1">
+                    <div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Calorie Assunte</span>
+                        <div class="text-2xl font-extrabold text-white mt-0.5"><span id="kcal-current">0</span> <span class="text-sm font-normal text-slate-400">/ <span id="kcal-target">2000</span> kcal</span></div>
+                    </div>
+                    <span id="kcal-status-badge" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-700 text-slate-300">In corso</span>
+                </div>
+
+                <!-- Barra Calorie Principale -->
+                <div class="w-full h-3.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700/70 my-3">
+                    <div id="kcal-progress-bar" class="h-full bg-blue-500 transition-all duration-300 rounded-full" style="width: 0%"></div>
+                </div>
+
+                <!-- I 3 Macronutrienti -->
+                <div class="grid grid-cols-3 gap-2.5 pt-2 border-t border-slate-700/60">
+                    <!-- Proteine -->
+                    <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-700/50">
+                        <div class="flex justify-between items-center text-xs mb-1">
+                            <span class="font-bold text-blue-400">Proteine</span>
+                            <span class="text-[10px] text-slate-400">Muscolo</span>
+                        </div>
+                        <div class="text-sm font-bold text-slate-100 mb-1.5"><span id="macro-p-cur">0</span><span class="text-xs font-normal text-slate-400">/<span id="macro-p-tar">140</span>g</span></div>
+                        <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="macro-p-bar" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <!-- Carboidrati -->
+                    <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-700/50">
+                        <div class="flex justify-between items-center text-xs mb-1">
+                            <span class="font-bold text-amber-400">Carbo</span>
+                            <span class="text-[10px] text-slate-400">Energia</span>
+                        </div>
+                        <div class="text-sm font-bold text-slate-100 mb-1.5"><span id="macro-c-cur">0</span><span class="text-xs font-normal text-slate-400">/<span id="macro-c-tar">220</span>g</span></div>
+                        <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="macro-c-bar" class="h-full bg-amber-500 transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <!-- Grassi -->
+                    <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-700/50">
+                        <div class="flex justify-between items-center text-xs mb-1">
+                            <span class="font-bold text-rose-400">Grassi</span>
+                            <span class="text-[10px] text-slate-400">Ormoni</span>
+                        </div>
+                        <div class="text-sm font-bold text-slate-100 mb-1.5"><span id="macro-f-cur">0</span><span class="text-xs font-normal text-slate-400">/<span id="macro-f-tar">65</span>g</span></div>
+                        <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="macro-f-bar" class="h-full bg-rose-500 transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BANNER IDRATAZIONE (ACQUA) -->
+            <div class="bg-slate-800 rounded-xl p-3.5 border border-slate-700 shadow-lg mb-5">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 text-lg shrink-0">
+                            <i class="fas fa-tint"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Idratazione Acqua</h4>
+                            <div class="text-sm font-extrabold text-cyan-400 mt-0.5">
+                                <span id="water-glasses-count">0</span> bicchieri <span class="text-xs font-normal text-slate-400">(<span id="water-liters-count">0.0</span> / 2.0 L)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="updateWaterCount(-1)" class="w-9 h-9 rounded-lg bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center font-bold text-base active:scale-95 transition-all">
+                            <i class="fas fa-minus text-xs"></i>
+                        </button>
+                        <button onclick="updateWaterCount(1)" class="w-9 h-9 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center font-bold text-base shadow active:scale-95 transition-all">
+                            <i class="fas fa-plus text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden mt-3">
+                    <div id="water-progress-bar" class="h-full bg-cyan-400 transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Pulsante Principale Aggiungi Pasto -->
+            <button onclick="openFoodModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2 mb-6">
+                <i class="fas fa-plus-circle text-lg"></i> Aggiungi Pasto, Integratore o Sgarro
+            </button>
+
+            <!-- Lista Pasti della Giornata Selezionata -->
+            <div class="flex items-center gap-2 mb-3">
+                <div class="h-px bg-slate-700 flex-1"></div>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Pasti e Integratori Registrati</h3>
+                <div class="h-px bg-slate-700 flex-1"></div>
+            </div>
+            <div id="daily-meals-list" class="space-y-3"></div>
+        </div>
+
+        <!-- ==================== 4. PROGRESSIONI ==================== -->
         <div id="main-tab-progressioni-content" class="tab-content">
-            <div class="mb-4 bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-end gap-2">
+            <div class="mb-3 bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-end gap-2">
                 <div class="flex-1">
                     <label class="block text-sm text-slate-400 mb-2">Data Allenamento</label>
-                    <input type="date" id="prog-date" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500" onchange="renderProgressioni()">
+                    <input type="date" id="prog-date" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white outline-none focus:border-blue-500" onchange="renderProgressioni(); renderWorkouts();">
                 </div>
-                <button onclick="openMuscleMap()" class="bg-blue-600 hover:bg-blue-500 text-white rounded-lg p-2 px-4 shadow transition-colors flex items-center justify-center shrink-0 h-[42px]"><i class="fas fa-calendar-alt mr-2"></i> Mappa</button>
+                <button onclick="openMuscleMap()" class="bg-blue-600 hover:bg-blue-500 text-white rounded-lg p-2 px-4 shadow transition-colors flex items-center justify-center shrink-0 h-[42px]"><i class="fas fa-street-view mr-2"></i> Mappa</button>
             </div>
+
+            <!-- Tasti Rapidi "Giorno 1", "Giorno 2" per scorrere agli esercizi -->
+            <div id="prog-days-jump-bar" class="flex overflow-x-auto gap-2 no-scrollbar pb-3 mb-2 items-center"></div>
+
             <div id="prog-list"></div>
         </div>
     </div>
 
+    <!-- BARRA DI NAVIGAZIONE INFERIORE (4 SEZIONI) -->
     <nav class="fixed bottom-0 w-full bg-slate-900 border-t border-slate-800 flex justify-around items-center pb-4 pt-2 z-50 shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.3)]">
-        <button onclick="switchMainTab('profilo')" id="nav-btn-profilo" class="bottom-nav-btn bottom-nav-inactive flex flex-col items-center p-2 w-1/3 outline-none"><i class="fas fa-user text-xl mb-1"></i><span class="text-[10px] font-bold uppercase tracking-widest">Profilo</span></button>
-        <button onclick="switchMainTab('workout')" id="nav-btn-workout" class="bottom-nav-btn bottom-nav-active flex flex-col items-center p-2 w-1/3 outline-none"><i class="fas fa-dumbbell text-xl mb-1"></i><span class="text-[10px] font-bold uppercase tracking-widest">Scheda</span></button>
-        <button onclick="switchMainTab('progressioni')" id="nav-btn-progressioni" class="bottom-nav-btn bottom-nav-inactive flex flex-col items-center p-2 w-1/3 outline-none"><i class="fas fa-chart-line text-xl mb-1"></i><span class="text-[10px] font-bold uppercase tracking-widest">Progressi</span></button>
+        <button onclick="switchMainTab('profilo')" id="nav-btn-profilo" class="bottom-nav-btn bottom-nav-inactive flex flex-col items-center p-2 w-1/4 outline-none">
+            <i class="fas fa-user text-lg mb-1"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wider">Profilo</span>
+        </button>
+        <button onclick="switchMainTab('workout')" id="nav-btn-workout" class="bottom-nav-btn bottom-nav-active flex flex-col items-center p-2 w-1/4 outline-none">
+            <i class="fas fa-dumbbell text-lg mb-1"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wider">Scheda</span>
+        </button>
+        <button onclick="switchMainTab('alimentazione')" id="nav-btn-alimentazione" class="bottom-nav-btn bottom-nav-inactive flex flex-col items-center p-2 w-1/4 outline-none">
+            <i class="fas fa-utensils text-lg mb-1"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wider">Alimentazione</span>
+        </button>
+        <button onclick="switchMainTab('progressioni')" id="nav-btn-progressioni" class="bottom-nav-btn bottom-nav-inactive flex flex-col items-center p-2 w-1/4 outline-none">
+            <i class="fas fa-chart-line text-lg mb-1"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wider">Progressi</span>
+        </button>
     </nav>
 
-    <!-- MODALE FILTRO DOMS (AGGIORNATO CON CHECKBOX MULTIPLE) -->
+    <!-- ==================== MODALE STORICO "DIARIO" ALIMENTARE ==================== -->
+    <div id="food-diary-modal" class="fixed inset-0 bg-slate-900/95 z-[145] hidden flex-col items-center pt-8 px-4 overflow-y-auto pb-10">
+        <div class="w-full max-w-md bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-100"><i class="fas fa-book-open text-blue-400 mr-2"></i>Diario Alimentare</h2>
+                <button onclick="closeFoodDiaryModal()" class="text-slate-400 hover:text-white p-1 text-2xl"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-xs text-slate-400 mb-1">Seleziona una data per vedere cosa hai mangiato:</label>
+                <input type="date" id="diary-inspect-date" onchange="renderDiaryModalContent()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm outline-none focus:border-blue-500">
+            </div>
+
+            <div class="mb-4">
+                <span class="block text-[11px] text-slate-400 mb-1.5">Giorni registrati di recente:</span>
+                <div id="diary-logged-dates-pills" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1"></div>
+            </div>
+
+            <!-- Riepilogo Macro + Acqua Raggiunti in quel Giorno -->
+            <div id="diary-modal-summary" class="bg-slate-900 rounded-xl p-3.5 border border-slate-700 mb-4"></div>
+
+            <!-- Elenco Pasti di quel Giorno -->
+            <div id="diary-modal-meals" class="space-y-2.5 max-h-80 overflow-y-auto pr-1 no-scrollbar mb-4"></div>
+
+            <button onclick="loadDiaryDateIntoMainView()" class="w-full bg-slate-700 hover:bg-slate-600 text-blue-300 font-bold py-2.5 rounded-lg text-xs transition-colors">
+                <i class="fas fa-edit mr-1"></i> Modifica i pasti di questa giornata
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== MODALE AGGIUNGI PASTO (4 SEZIONI: FAMIGLIA / CONFEZIONATI / GYM / SGARRO) ==================== -->
+    <div id="food-modal" class="fixed inset-0 bg-slate-900/95 z-[140] hidden flex-col items-center pt-6 px-4 overflow-y-auto pb-10">
+        <div class="w-full max-w-md bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-100"><i class="fas fa-utensils text-blue-400 mr-2"></i>Registra Alimento</h2>
+                <button onclick="closeFoodModal()" class="text-slate-400 hover:text-white p-1 text-2xl"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Selettore Momento del Pasto -->
+            <div class="mb-4">
+                <label class="block text-xs text-slate-400 mb-1">Momento della giornata</label>
+                <select id="food-meal-type" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm font-semibold outline-none focus:border-blue-500">
+                    <option value="Colazione">☀️ Colazione</option>
+                    <option value="Pranzo" selected>🍝 Pranzo</option>
+                    <option value="Cena">🌙 Cena</option>
+                    <option value="Spuntino">🍎 Spuntino / Pre-Post Workout</option>
+                </select>
+            </div>
+
+            <!-- Switcher a 4 Schede (Griglia 2x2 comoda per il pollice) -->
+            <div class="grid grid-cols-2 gap-1.5 bg-slate-900 p-1.5 rounded-xl border border-slate-700 mb-4">
+                <button id="tab-btn-homefood" onclick="switchFoodModalTab('home')" class="py-2 px-2 rounded-lg text-xs font-bold bg-blue-600 text-white shadow transition-all truncate">
+                    <i class="fas fa-home mr-1"></i>Piatti Famiglia
+                </button>
+                <button id="tab-btn-onlinefood" onclick="switchFoodModalTab('online')" class="py-2 px-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all truncate">
+                    <i class="fas fa-barcode mr-1"></i>Cerca Confezionati
+                </button>
+                <button id="tab-btn-gymfood" onclick="switchFoodModalTab('gym')" class="py-2 px-2 rounded-lg text-xs font-bold text-slate-400 hover:text-emerald-400 transition-all truncate">
+                    <i class="fas fa-dumbbell mr-1 text-emerald-400"></i>Palestra & Integr.
+                </button>
+                <button id="tab-btn-cheatfood" onclick="switchFoodModalTab('cheat')" class="py-2 px-2 rounded-lg text-xs font-bold text-slate-400 hover:text-orange-400 transition-all truncate">
+                    <i class="fas fa-fire mr-1 text-orange-500"></i>Sgarro & Alcol
+                </button>
+            </div>
+
+            <!-- TAB 1: PIATTI DI FAMIGLIA (T-SHIRT SIZING) -->
+            <div id="food-tab-home" class="space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Filtra Categoria o Cerca Piatto</label>
+                    <div class="flex gap-2 mb-2">
+                        <select id="home-food-cat" onchange="filterHomeFoodList()" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs outline-none">
+                            <option value="Tutti">Tutte</option>
+                            <option value="Primi">Primi</option>
+                            <option value="Secondi">Secondi</option>
+                            <option value="Contorni">Contorni</option>
+                            <option value="Colazione">Colazione</option>
+                            <option value="Pizze e Unici">Piatti Unici</option>
+                        </select>
+                        <input type="text" id="home-food-search" oninput="filterHomeFoodList()" placeholder="Es. Ragù, Pollo, Risotto..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs outline-none focus:border-blue-500">
+                    </div>
+                    <div id="home-food-list" class="max-h-44 overflow-y-auto bg-slate-900 rounded-lg border border-slate-700 divide-y divide-slate-800"></div>
+                </div>
+
+                <div id="home-food-config" class="hidden bg-slate-900/90 p-3.5 rounded-xl border border-blue-500/40 space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span id="selected-home-food-name" class="font-bold text-blue-400 text-sm">Piatto selezionato</span>
+                        <span id="selected-home-food-desc" class="text-[11px] text-slate-400"></span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-2"><i class="fas fa-expand-arrows-alt text-blue-400 mr-1"></i>1. Quantità ad occhio (Taglia Porzione)</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button type="button" onclick="setPortionSize('S')" id="size-btn-S" class="choice-btn bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div class="font-extrabold text-sm">S</div>
+                                <div class="text-[9px] text-slate-400">Piccola</div>
+                            </button>
+                            <button type="button" onclick="setPortionSize('M')" id="size-btn-M" class="choice-btn active bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div class="font-extrabold text-sm">M</div>
+                                <div class="text-[9px] text-slate-200">Media</div>
+                            </button>
+                            <button type="button" onclick="setPortionSize('L')" id="size-btn-L" class="choice-btn bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div class="font-extrabold text-sm">L</div>
+                                <div class="text-[9px] text-slate-400">Piatto Pieno</div>
+                            </button>
+                            <button type="button" onclick="setPortionSize('XL')" id="size-btn-XL" class="choice-btn bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div class="font-extrabold text-sm">XL</div>
+                                <div class="text-[9px] text-slate-400">Abbondante/Bis</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-2"><i class="fas fa-tint text-amber-400 mr-1"></i>2. Stile di cottura / Condimento in famiglia</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="setCondimentLevel('low')" id="cond-btn-low" class="choice-btn bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div class="font-bold text-xs">Leggero</div>
+                                <div class="text-[9px] text-slate-400">Poco olio</div>
+                            </button>
+                            <button type="button" onclick="setCondimentLevel('norm')" id="cond-btn-norm" class="choice-btn active bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div class="font-bold text-xs">Normale</div>
+                                <div class="text-[9px] text-slate-200">Casalingo</div>
+                            </button>
+                            <button type="button" onclick="setCondimentLevel('high')" id="cond-btn-high" class="choice-btn bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div class="font-bold text-xs">Ricco / Unto</div>
+                                <div class="text-[9px] text-slate-400">+10g Grassi</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex justify-around text-center">
+                        <div><div class="text-[10px] text-slate-400">Calorie</div><div id="preview-kcal" class="font-bold text-white text-sm">0</div></div>
+                        <div><div class="text-[10px] text-blue-400">Proteine</div><div id="preview-p" class="font-bold text-blue-300 text-sm">0g</div></div>
+                        <div><div class="text-[10px] text-amber-400">Carbo</div><div id="preview-c" class="font-bold text-amber-300 text-sm">0g</div></div>
+                        <div><div class="text-[10px] text-rose-400">Grassi</div><div id="preview-f" class="font-bold text-rose-300 text-sm">0g</div></div>
+                    </div>
+
+                    <button onclick="saveHomeFoodMeal()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow transition-colors">
+                        <i class="fas fa-check mr-1"></i> Aggiungi al Diario
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: CERCA CONFEZIONATI ONLINE -->
+            <div id="food-tab-online" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Cerca Prodotto o Marca (Database Mondiale)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="online-food-query" onkeypress="if(event.key==='Enter') searchOnlineFood()" placeholder="Es. Yogurt Greco Fage, Kinder, Tonno..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-xs outline-none focus:border-blue-500">
+                        <button onclick="searchOnlineFood()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg font-bold text-xs shrink-0"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+
+                <div id="online-food-results" class="max-h-48 overflow-y-auto bg-slate-900 rounded-lg border border-slate-700 divide-y divide-slate-800">
+                    <div class="text-xs text-slate-500 text-center py-6">Scrivi il nome di un alimento confezionato e premi cerca.</div>
+                </div>
+
+                <div id="online-food-config" class="hidden bg-slate-900/90 p-3.5 rounded-xl border border-blue-500/40 space-y-3">
+                    <div id="selected-online-food-name" class="font-bold text-blue-400 text-sm truncate">Prodotto</div>
+                    <div class="flex items-center gap-3">
+                        <label class="text-xs text-slate-300">Quantità consumata (grammi):</label>
+                        <input type="number" id="online-food-grams" value="100" oninput="updateOnlineFoodPreview()" class="w-24 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center font-bold text-sm outline-none focus:border-blue-500">
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex justify-around text-center text-xs">
+                        <div><span class="text-slate-400">Kcal:</span> <b id="on-prev-kcal" class="text-white">0</b></div>
+                        <div><span class="text-blue-400">P:</span> <b id="on-prev-p" class="text-blue-300">0g</b></div>
+                        <div><span class="text-amber-400">C:</span> <b id="on-prev-c" class="text-amber-300">0g</b></div>
+                        <div><span class="text-rose-400">G:</span> <b id="on-prev-f" class="text-rose-300">0g</b></div>
+                    </div>
+                    <button onclick="saveOnlineFoodMeal()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-lg shadow transition-colors">
+                        <i class="fas fa-check mr-1"></i> Aggiungi Prodotto
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 3: PALESTRA & INTEGRATORI (NUOVA SEZIONE) -->
+            <div id="food-tab-gym" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Filtra Integratore o Alimento Fitness</label>
+                    <div class="flex gap-2 mb-2">
+                        <select id="gym-food-cat" onchange="filterGymFoodList()" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs outline-none">
+                            <option value="Tutti">Tutti</option>
+                            <option value="Proteine in Polvere">Proteine in Polvere</option>
+                            <option value="Creatina & Pre-Workout">Creatina & Aminoacidi</option>
+                            <option value="Barrette & Snack">Barrette & Budini Fit</option>
+                            <option value="Cibi Palestra">Cibi Base Palestra</option>
+                        </select>
+                        <input type="text" id="gym-food-search" oninput="filterGymFoodList()" placeholder="Es. Creatina, Whey, Barretta..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs outline-none focus:border-emerald-500">
+                    </div>
+                    <div id="gym-food-list" class="max-h-44 overflow-y-auto bg-slate-900 rounded-lg border border-slate-700 divide-y divide-slate-800"></div>
+                </div>
+
+                <div id="gym-food-config" class="hidden bg-slate-900/90 p-3.5 rounded-xl border border-emerald-500/40 space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span id="selected-gym-food-name" class="font-bold text-emerald-400 text-sm">Integratore selezionato</span>
+                        <span id="selected-gym-food-desc" class="text-[11px] text-slate-400"></span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-2"><i class="fas fa-spoon text-emerald-400 mr-1"></i>Seleziona Dosaggio / Misurini / Porzioni</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button type="button" onclick="setGymMultiplier(0.5)" id="gym-mult-0.5" class="choice-btn-gym bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div class="font-extrabold text-sm">0.5x</div>
+                                <div class="text-[9px] text-slate-300">Mezza dose</div>
+                            </button>
+                            <button type="button" onclick="setGymMultiplier(1)" id="gym-mult-1" class="choice-btn-gym active bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div class="font-extrabold text-sm">1x</div>
+                                <div class="text-[9px] text-slate-200">1 Dose std</div>
+                            </button>
+                            <button type="button" onclick="setGymMultiplier(1.5)" id="gym-mult-1.5" class="choice-btn-gym bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div class="font-extrabold text-sm">1.5x</div>
+                                <div class="text-[9px] text-slate-300">Dose e mezza</div>
+                            </button>
+                            <button type="button" onclick="setGymMultiplier(2)" id="gym-mult-2" class="choice-btn-gym bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div class="font-extrabold text-sm">2x</div>
+                                <div class="text-[9px] text-slate-300">Doppia dose</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex justify-around text-center">
+                        <div><div class="text-[10px] text-slate-400">Calorie</div><div id="gym-prev-kcal" class="font-bold text-emerald-400 text-sm">0</div></div>
+                        <div><div class="text-[10px] text-blue-400">Proteine</div><div id="gym-prev-p" class="font-bold text-blue-300 text-sm">0g</div></div>
+                        <div><div class="text-[10px] text-amber-400">Carbo</div><div id="gym-prev-c" class="font-bold text-amber-300 text-sm">0g</div></div>
+                        <div><div class="text-[10px] text-rose-400">Grassi</div><div id="gym-prev-f" class="font-bold text-rose-300 text-sm">0g</div></div>
+                    </div>
+
+                    <button onclick="saveGymFoodMeal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg shadow transition-colors">
+                        <i class="fas fa-check mr-1"></i> Registra Integratore / Alimento Fit
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 4: SGARRO, FAST FOOD & ALCOLICI -->
+            <div id="food-tab-cheat" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Filtra Fast Food, Dolci o Alcolici</label>
+                    <div class="flex gap-2 mb-2">
+                        <select id="cheat-food-cat" onchange="filterCheatFoodList()" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs outline-none">
+                            <option value="Tutti">Tutti gli Sgarri</option>
+                            <option value="McDonald's">🍔 McDonald's</option>
+                            <option value="Kebab & Street">🥙 Kebab & Street Food</option>
+                            <option value="Sushi & Etnico">🍣 Sushi & AYCE</option>
+                            <option value="Pizze & Fritti">🍕 Pizze & Fritti</option>
+                            <option value="Birre & Vini">🍺 Birre & Vini</option>
+                            <option value="Cocktail & Superalcolici">🍸 Cocktail & Liquori</option>
+                            <option value="Dolci & Gelati">🍨 Dolci & Gelati</option>
+                        </select>
+                        <input type="text" id="cheat-food-search" oninput="filterCheatFoodList()" placeholder="Es. Big Mac, Spritz, Gin Tonic..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs outline-none focus:border-orange-500">
+                    </div>
+                    <div id="cheat-food-list" class="max-h-44 overflow-y-auto bg-slate-900 rounded-lg border border-slate-700 divide-y divide-slate-800"></div>
+                </div>
+
+                <!-- Configurazione Sgarro / Alcolico -->
+                <div id="cheat-food-config" class="hidden bg-slate-900/90 p-3.5 rounded-xl border border-orange-500/40 space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span id="selected-cheat-food-name" class="font-bold text-orange-400 text-sm">Sgarro selezionato</span>
+                        <span id="selected-cheat-food-desc" class="text-[11px] text-slate-400"></span>
+                    </div>
+
+                    <div id="cheat-combo-container">
+                        <label id="cheat-combo-label" class="block text-xs font-semibold text-slate-300 mb-2"><i class="fas fa-utensils text-orange-400 mr-1"></i>Modalità / Quantità</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="setCheatCombo('single')" id="cheat-combo-single" class="choice-btn-cheat active bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div id="cheat-lbl-single" class="font-bold text-xs">Singolo</div>
+                                <div id="cheat-sub-single" class="text-[9px] text-slate-300">Solo prodotto</div>
+                            </button>
+                            <button type="button" onclick="setCheatCombo('medium')" id="cheat-combo-medium" class="choice-btn-cheat bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div id="cheat-lbl-medium" class="font-bold text-xs">+ Menù Medio</div>
+                                <div id="cheat-sub-medium" class="text-[9px] text-slate-300">Patatine + Salse</div>
+                            </button>
+                            <button type="button" onclick="setCheatCombo('large')" id="cheat-combo-large" class="choice-btn-cheat bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                                <div id="cheat-lbl-large" class="font-bold text-xs">+ Menù Grande</div>
+                                <div id="cheat-sub-large" class="text-[9px] text-slate-300">Pat. Grandi + Bibita</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex justify-around text-center">
+                        <div><div class="text-[10px] text-slate-400">Calorie</div><div id="cheat-prev-kcal" class="font-bold text-orange-400 text-sm">0</div></div>
+                        <div><div class="text-[10px] text-blue-400">Proteine</div><div id="cheat-prev-p" class="font-bold text-blue-300 text-sm">0g</div></div>
+                        <div><div class="text-[10px] text-amber-400">Carbo/Zuccheri</div><div id="cheat-prev-c" class="font-bold text-amber-300 text-sm">0g</div></div>
+                        <div><div class="text-[10px] text-rose-400">Grassi</div><div id="cheat-prev-f" class="font-bold text-rose-300 text-sm">0g</div></div>
+                    </div>
+
+                    <button onclick="saveCheatFoodMeal()" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg shadow transition-colors">
+                        <i class="fas fa-fire mr-1"></i> Registra nel Diario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE FILTRO DOMS -->
     <div id="doms-modal" class="fixed inset-0 bg-slate-900/95 z-[115] hidden flex-col items-center pt-20 px-4">
         <div class="w-full max-w-md bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-slate-100"><i class="fas fa-filter text-blue-400 mr-2"></i>Filtro DOMS</h2>
                 <button onclick="closeDomsModal()" class="text-slate-400 hover:text-white p-1 text-2xl"><i class="fas fa-times"></i></button>
             </div>
-            <p class="text-sm text-slate-400 mb-4">Seleziona i muscoli doloranti. Verranno sostituiti TUTTI gli esercizi che li coinvolgono con quelli degli altri distretti odierni.</p>
-            
+            <p class="text-sm text-slate-400 mb-4">Seleziona i muscoli doloranti. Verranno sostituiti temporaneamente gli esercizi che li coinvolgono.</p>
             <div class="space-y-4 mb-6">
-                <!-- Checkbox a griglia per i muscoli -->
                 <div id="doms-checkboxes" class="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto no-scrollbar p-3 bg-slate-900 rounded-lg border border-slate-700">
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-chest-upper" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Petto Alto</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-chest-lower" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Petto Basso</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-shoulder" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Spalle Ant/Lat</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-shoulder" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Spalle Post.</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-traps" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Trapezi</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-lats" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Dorsali</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-lowerback" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Lombari</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-biceps" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Bicipiti</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-triceps" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Tricipiti</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-forearm" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Avambracci</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-abs" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Addome</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-obliques" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Obliqui</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-quads" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Quadricipiti</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-hamstrings" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Femorali</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-glutes" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Glutei</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-adductors" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Adduttori</label>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-calves" class="doms-chk w-4 h-4 accent-yellow-600 bg-slate-800 border-slate-600 rounded"> Polpacci</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-chest-upper" class="doms-chk w-4 h-4 accent-yellow-600"> Petto Alto</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-chest-lower" class="doms-chk w-4 h-4 accent-yellow-600"> Petto Basso</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-shoulder" class="doms-chk w-4 h-4 accent-yellow-600"> Spalle Ant/Lat</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-shoulder" class="doms-chk w-4 h-4 accent-yellow-600"> Spalle Post.</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-traps" class="doms-chk w-4 h-4 accent-yellow-600"> Trapezi</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-lats" class="doms-chk w-4 h-4 accent-yellow-600"> Dorsali</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-lowerback" class="doms-chk w-4 h-4 accent-yellow-600"> Lombari</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-biceps" class="doms-chk w-4 h-4 accent-yellow-600"> Bicipiti</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-triceps" class="doms-chk w-4 h-4 accent-yellow-600"> Tricipiti</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-forearm" class="doms-chk w-4 h-4 accent-yellow-600"> Avambracci</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-abs" class="doms-chk w-4 h-4 accent-yellow-600"> Addome</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-obliques" class="doms-chk w-4 h-4 accent-yellow-600"> Obliqui</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-quads" class="doms-chk w-4 h-4 accent-yellow-600"> Quadricipiti</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-hamstrings" class="doms-chk w-4 h-4 accent-yellow-600"> Femorali</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="back-glutes" class="doms-chk w-4 h-4 accent-yellow-600"> Glutei</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-adductors" class="doms-chk w-4 h-4 accent-yellow-600"> Adduttori</label>
+                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="checkbox" value="front-calves" class="doms-chk w-4 h-4 accent-yellow-600"> Polpacci</label>
                 </div>
             </div>
-            
             <div class="flex gap-2">
                 <button onclick="removeDomsFilter()" class="w-1/3 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-2 rounded-lg transition-colors">Rimuovi</button>
                 <button onclick="applyDomsFilter()" class="w-2/3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 rounded-lg transition-colors">Applica Filtro</button>
@@ -162,19 +609,19 @@
         </div>
     </div>
 
-    <!-- MODALE SOSTITUISCI MACCHINARIO -->
+    <!-- MODALE SOSTITUISCI MACCHINARIO OCCUPATO -->
     <div id="swap-modal" class="fixed inset-0 bg-slate-900/95 z-[125] hidden flex-col items-center pt-20 px-4 overflow-y-auto pb-10">
         <div class="w-full max-w-md bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-slate-100"><i class="fas fa-exchange-alt text-blue-400 mr-2"></i>Sostituisci Macchinario</h2>
+                <h2 class="text-xl font-bold text-slate-100"><i class="fas fa-exchange-alt text-blue-400 mr-2"></i>Macchinario Occupato</h2>
                 <button onclick="closeSwapModal()" class="text-slate-400 hover:text-white p-1 text-2xl"><i class="fas fa-times"></i></button>
             </div>
-            <p class="text-sm text-slate-400 mb-4">Seleziona un'alternativa per lo stesso gruppo muscolare.</p>
+            <p class="text-sm text-slate-400 mb-4">Scegli un esercizio sostitutivo solo per oggi. L'originale e i suoi progressi rimarranno intatti.</p>
             <div id="swap-list" class="space-y-2 max-h-96 overflow-y-auto pr-1 no-scrollbar"></div>
         </div>
     </div>
 
-    <!-- GLI ALTRI MODALI -->
+    <!-- ALTRI MODALI (BACKUP, SCHEDE, NUOVO ESERCIZIO, LIBRERIA, CONFERMA, MAPPA) -->
     <div id="backup-modal" class="fixed inset-0 bg-slate-900/95 z-[200] hidden flex-col items-center pt-20 px-4">
         <div class="w-full max-w-md bg-slate-800 rounded-xl p-5 border border-slate-700 shadow-2xl">
             <div class="flex justify-between items-center mb-4"><h2 id="backup-title" class="text-xl font-bold text-slate-100">Esporta Dati</h2><button onclick="closeBackupModal()" class="text-slate-400 hover:text-white p-1 text-2xl"><i class="fas fa-times"></i></button></div>
@@ -255,7 +702,6 @@
                 <button id="btn-range-3" onclick="setMapRange(3)" class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors bg-slate-700 text-slate-300">3 Giorni</button>
                 <button id="btn-range-7" onclick="setMapRange(7)" class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors bg-slate-700 text-slate-300">7 Giorni</button>
             </div>
-            
             <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-xl mb-6">
                 <div class="map-container">
                     <img src="manichino.jpg" alt="Manichino Base">

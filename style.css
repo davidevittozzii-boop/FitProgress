@@ -1,62 +1,99 @@
-body { background-color: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-.nav-btn { transition: all 0.2s; white-space: nowrap; }
-.nav-btn.active { background-color: #3b82f6; color: white; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5); font-weight: bold; }
-.nav-btn.inactive { background-color: #1e293b; color: #94a3b8; }
-.tab-content { display: none; }
-.tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
-.editable-input { background: transparent; border: none; border-bottom: 1px solid #3b82f6; color: white; width: 40px; text-align: center; outline: none; }
-.editable-input:focus { background: rgba(59,130,246,0.2); }
+html {
+    scroll-behavior: smooth;
+}
 
-/* ACCORDION (usato per Profilo, Liste Esercizi e Libreria) */
-.accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-.accordion-content.open { max-height: 800px; }
+body {
+    background-color: #0f172a;
+    color: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
 
+/* Nascondi scrollbar per navigazione fluida */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-.sortable-ghost { opacity: 0.4; background-color: #1e293b; }
-.bottom-nav-btn { transition: color 0.2s ease, transform 0.1s ease; }
-.bottom-nav-btn:active { transform: scale(0.95); }
-.bottom-nav-active { color: #3b82f6 !important; }
+
+/* Bottoni navigazione giorni */
+.nav-btn { transition: all 0.2s ease; white-space: nowrap; }
+.nav-btn.active { background-color: #2563eb; color: #ffffff; font-weight: 600; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+.nav-btn.inactive { background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+
+/* Animazione cambio scheda */
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.25s ease-out; }
+
+/* Input rapidi Serie x Rip e Recupero */
+.editable-input {
+    background: #0f172a;
+    border: 1px solid #3b82f6;
+    color: #ffffff;
+    width: 65px;
+    text-align: center;
+    border-radius: 6px;
+    padding: 2px 4px;
+    outline: none;
+}
+
+/* Menu a tendina / Accordion */
+.accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+.accordion-content.open { max-height: 1200px; }
+
+/* Effetto trascinamento esercizi */
+.sortable-ghost { opacity: 0.4; background-color: #1e293b; border: 2px dashed #3b82f6; }
+
+/* Barra di navigazione inferiore */
+.bottom-nav-btn { transition: all 0.2s ease; }
+.bottom-nav-active { color: #3b82f6; }
 .bottom-nav-inactive { color: #64748b; }
 
-/* === STILE MAPPA MUSCOLARE === */
-#muscle-modal { transition: opacity 0.3s ease; }
-
-.map-container { 
-    position: relative; 
-    width: 100%; 
-    max-width: 320px; 
-    margin: 0 auto; 
-    border-radius: 12px; 
-    overflow: hidden; 
-    background: #1e293b; 
-    border: 1px solid #334155; 
+/* Mappa Muscolare */
+.map-container {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #ffffff;
 }
-.map-container img { 
-    width: 100%; 
-    display: block; 
-    object-fit: cover; 
-}
-
+.map-container img { width: 100%; display: block; }
 .muscle-layer {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden; 
+    top: 0; left: 0; width: 100%; height: 100%;
+    overflow: hidden;
     opacity: 0;
-    mix-blend-mode: multiply; 
-    transition: all 0.4s ease;
+    mix-blend-mode: multiply;
+    transition: opacity 0.4s ease;
     pointer-events: none;
 }
-
 .muscle-layer img {
     position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: -1000px; 
+    width: 100%; height: 100%;
+    top: 0; left: -1000px;
 }
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+/* Selettori Taglie, Condimento, Gym e Combo Sgarro */
+.choice-btn { transition: all 0.15s ease; }
+.choice-btn.active {
+    background-color: #2563eb;
+    color: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+}
+.choice-btn-cheat.active {
+    background-color: #ea580c;
+    color: #ffffff;
+    border-color: #f97316;
+    box-shadow: 0 2px 8px rgba(234, 88, 12, 0.4);
+}
+.choice-btn-gym.active {
+    background-color: #059669;
+    color: #ffffff;
+    border-color: #10b981;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
