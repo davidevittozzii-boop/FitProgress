@@ -86,90 +86,152 @@ const exerciseDB = [
     { category: "Addome e Core", name: "Woodchopper (Cavi)", tech: "Movimento di taglio diagonale per gli obliqui.", muscles: {'front-obliques': 3, 'front-abs': 1, 'front-shoulder': 1} }
 ];
 
-// ==================== 1. DATABASE PIATTI DI FAMIGLIA (CON VERDURE ESTESE) ====================
+// ==================== SISTEMA DI GUIDA VISIVA ALLE PORZIONI PER NEOFITI ====================
+const portionGuides = {
+    "Primi": {
+        sub: { S: "Piatto scarso", M: "Piatto normale", L: "Piatto colmo", XL: "Trattoria / Bis" },
+        help: {
+            S: "<b>Taglia S (~60g a crudo):</b> Piatto piccolo o fondo del piatto appena coperto (circa 1 pugno chiuso).",
+            M: "<b>Taglia M (~85g a crudo):</b> Porzione casalinga classica che riempie il centro del piatto senza strabordare.",
+            L: "<b>Taglia L (~115g a crudo):</b> Piatto ben pieno fino ai bordi (circa 2 pugni chiusi abbondanti).",
+            XL: "<b>Taglia XL (~150g a crudo):</b> Piatto strabordante o porzione + bis."
+        }
+    },
+    "Secondi": {
+        sub: { S: "Piccolo (~100g)", M: "1 Filetto/Fetta", L: "Abbondante", XL: "Doppia porz." },
+        help: {
+            S: "<b>Taglia S (~100-110g):</b> 1 fettina piccola, 1 uovo o un trancio grande quanto il solo palmo della mano (senza dita).",
+            M: "<b>Taglia M (~160-180g):</b> 1 petto/filetto medio intero, 2 uova o una bistecca grande come tutta la tua mano.",
+            L: "<b>Taglia L (~230g):</b> 2 fettine piene, 3 uova o un filetto molto spesso e largo.",
+            XL: "<b>Taglia XL (~300g+):</b> Doppia porzione di carne o pesce."
+        }
+    },
+    "Formaggi": {
+        sub: { S: "1 Fetta (~25g)", M: "2 Fette (~50g)", L: "3-4 Fette (~80g)", XL: "Piatto (~125g)" },
+        help: {
+            S: "<b>Taglia S (~25-30g):</b> <b>1 fettina</b> media (es. Silano/Scamorza), 1 cucchiaio colmo o un cubetto grande come il tuo pollice.",
+            M: "<b>Taglia M (~50-60g):</b> <b>2 fettine</b> medie di Silano/Provola, 3-4 fette di affettato o mezza mozzarella.",
+            L: "<b>Taglia L (~80-90g):</b> <b>3-4 fette</b> spesse di formaggio, un bel trancio o 1 piatto intero di bresaola/crudo.",
+            XL: "<b>Taglia XL (~125g+):</b> 1 Mozzarella intera grande o <b>5+ fette</b> di formaggio usate come piatto principale."
+        }
+    },
+    "Contorni": {
+        sub: { S: "1 Manciata", M: "Mezzo piatto", L: "Piatto pieno", XL: "Ciotolona" },
+        help: {
+            S: "<b>Taglia S (~60-70g):</b> <b>Una manciata / 2 cucchiai</b> messi a lato del secondo (es. 5-6 rondelle di zucchine).",
+            M: "<b>Taglia M (~140-150g):</b> Contorno standard che copre circa <b>metà piatto</b> (1 pugno pieno di verdura).",
+            L: "<b>Taglia L (~220g):</b> Un piatto piano quasi interamente pieno di verdura.",
+            XL: "<b>Taglia XL (~300g+):</b> Una ciotola/insalatiera grande piena di verdure."
+        }
+    },
+    "Colazione": {
+        sub: { S: "Piccola", M: "1 Unità / Media", L: "Grande", XL: "Doppia" },
+        help: {
+            S: "<b>Taglia S:</b> Mezza porzione, 1 frutto piccolo o 2-3 biscotti.",
+            M: "<b>Taglia M:</b> 1 porzione normale (1 cornetto, 1 frutto medio, 1 tazza con 4-5 biscotti o 1 manciata di noci).",
+            L: "<b>Taglia L:</b> Porzione abbondante (tazza grande con 7-8 biscotti o 1 cornetto farcito grande).",
+            XL: "<b>Taglia XL:</b> Doppia porzione (es. 2 cornetti o 2 frutti grandi)."
+        }
+    },
+    "Pizze e Unici": {
+        sub: { S: "Metà / Trancio", M: "1 Normale", L: "1 Grande/Ricca", XL: "1 e Mezza" },
+        help: {
+            S: "<b>Taglia S:</b> Mezza piadina, mezzo panino o 1 trancio singolo.",
+            M: "<b>Taglia M:</b> 1 Piadina intera, 1 Panino normale o 1 porzione media in teglia.",
+            L: "<b>Taglia L:</b> 1 Panino molto imbottito o 1 porzione abbondante.",
+            XL: "<b>Taglia XL:</b> 1 porzione e mezza o bis."
+        }
+    }
+};
+
+// ==================== 1. DATABASE PIATTI DI FAMIGLIA (CON FORMAGGI E VERDURE REALI) ====================
 const homeFoodDB = [
     // PRIMI PIATTI
-    { cat: "Primi", name: "Pasta al Pomodoro e Basilico", desc: "Porzione media (~85g pasta cruda)", kcal: 390, p: 11, c: 68, f: 8 },
-    { cat: "Primi", name: "Pasta al Ragù di Carne (Bolognese)", desc: "Porzione media con ragù casalingo", kcal: 490, p: 21, c: 66, f: 15 },
+    { cat: "Primi", name: "Pasta al Pomodoro e Basilico", desc: "Taglia M = ~85g pasta cruda", kcal: 390, p: 11, c: 68, f: 8 },
+    { cat: "Primi", name: "Pasta al Ragù di Carne (Bolognese)", desc: "Taglia M = piatto normale con ragù", kcal: 490, p: 21, c: 66, f: 15 },
     { cat: "Primi", name: "Pasta alla Carbonara", desc: "Con guanciale, uova e pecorino", kcal: 580, p: 23, c: 64, f: 25 },
-    { cat: "Primi", name: "Pasta al Pesto Genovese", desc: "Porzione media condita", kcal: 510, p: 13, c: 65, f: 22 },
+    { cat: "Primi", name: "Pasta al Pesto Genovese", desc: "Taglia M = piatto normale condito", kcal: 510, p: 13, c: 65, f: 22 },
     { cat: "Primi", name: "Pasta con Tonno", desc: "In bianco o al pomodoro", kcal: 460, p: 24, c: 65, f: 11 },
     { cat: "Primi", name: "Pasta e Fagioli / Ceci / Lenticchie", desc: "Scodella media mista", kcal: 420, p: 18, c: 64, f: 9 },
     { cat: "Primi", name: "Pasta in Bianco (Olio e Parmigiano)", desc: "Piatto medio semplice", kcal: 410, p: 14, c: 64, f: 11 },
     { cat: "Primi", name: "Pasta con Zucchine / Melanzane / Peperoni", desc: "Porzione media con verdure saltate", kcal: 430, p: 12, c: 67, f: 12 },
     { cat: "Primi", name: "Pasta e Broccoli / Cavolfiore", desc: "Porzione media casalinga", kcal: 410, p: 14, c: 68, f: 9 },
-    { cat: "Primi", name: "Lasagne alla Bolognese", desc: "Trancio medio casalingo", kcal: 560, p: 26, c: 48, f: 29 },
+    { cat: "Primi", name: "Lasagne alla Bolognese", desc: "Taglia M = 1 quadrato medio da teglia", kcal: 560, p: 26, c: 48, f: 29 },
     { cat: "Primi", name: "Gnocchi di Patate al Sugo", desc: "Piatto medio (~220g)", kcal: 380, p: 9, c: 70, f: 7 },
     { cat: "Primi", name: "Risotto (Zafferano / Funghi / Verdure)", desc: "Piatto medio mantecato", kcal: 450, p: 11, c: 68, f: 14 },
-    { cat: "Primi", name: "Riso Basmati o Bianco Bollito", desc: "Porzione media (~85g crudo)", kcal: 310, p: 7, c: 67, f: 1 },
+    { cat: "Primi", name: "Riso Basmati o Bianco Bollito", desc: "Taglia M = ~85g riso crudo", kcal: 310, p: 7, c: 67, f: 1 },
     { cat: "Primi", name: "Tortellini / Ravioli Ripieni di Carne", desc: "In brodo o con burro e salvia", kcal: 480, p: 20, c: 55, f: 19 },
     { cat: "Primi", name: "Minestrone / Passato di Verdure (Senza pasta)", desc: "Fondina piena", kcal: 140, p: 5, c: 20, f: 4 },
     { cat: "Primi", name: "Vellutata di Zucca / Zucchine / Carote", desc: "Piatto medio con filo d'olio", kcal: 170, p: 4, c: 22, f: 7 },
 
     // SECONDI PIATTI
-    { cat: "Secondi", name: "Petto di Pollo / Tacchino alla Piastra", desc: "Porzione media (~160g)", kcal: 210, p: 38, c: 0, f: 6 },
+    { cat: "Secondi", name: "Petto di Pollo / Tacchino alla Piastra", desc: "Taglia M = ~160g (2-3 fettine)", kcal: 210, p: 38, c: 0, f: 6 },
     { cat: "Secondi", name: "Pollo Arrosto / Al Forno (Con pelle)", desc: "Coscia/sovracoscia o quarto medio", kcal: 330, p: 34, c: 0, f: 21 },
-    { cat: "Secondi", name: "Cotoletta Impanata (Pollo o Vitello)", desc: "Porzione media casalinga", kcal: 390, p: 28, c: 20, f: 22 },
+    { cat: "Secondi", name: "Cotoletta Impanata (Pollo o Vitello)", desc: "1 Cotoletta media casalinga", kcal: 390, p: 28, c: 20, f: 22 },
     { cat: "Secondi", name: "Bistecca / Tagliata di Manzo", desc: "Taglio medio (~180g)", kcal: 310, p: 38, c: 0, f: 17 },
-    { cat: "Secondi", name: "Hamburger di Manzo / Pollo (Solo carne in padella)", desc: "1-2 Svizzere medie (~160g)", kcal: 280, p: 32, c: 1, f: 16 },
-    { cat: "Secondi", name: "Polpette di Carne al Sugo", desc: "4-5 polpette medie", kcal: 370, p: 24, c: 12, f: 25 },
+    { cat: "Secondi", name: "Hamburger di Manzo / Pollo (Solo carne in padella)", desc: "Taglia M = 1 Burger grande o 2 piccoli", kcal: 280, p: 32, c: 1, f: 16 },
+    { cat: "Secondi", name: "Polpette di Carne al Sugo", desc: "Taglia M = 4-5 polpette medie", kcal: 370, p: 24, c: 12, f: 25 },
     { cat: "Secondi", name: "Lonza o Braciola di Maiale in Padella", desc: "Fetta media (~160g)", kcal: 290, p: 33, c: 0, f: 17 },
     { cat: "Secondi", name: "Spezzatino di Carne (Manzo / Vitello)", desc: "Porzione media in umido", kcal: 320, p: 31, c: 6, f: 19 },
-    { cat: "Secondi", name: "Pesce Bianco al Forno / Vapore (Orata/Branzino/Merluzzo)", desc: "Filetto medio (~180g)", kcal: 210, p: 34, c: 0, f: 8 },
-    { cat: "Secondi", name: "Trancio di Salmone (Piastra o Forno)", desc: "Trancio medio (~150g)", kcal: 320, p: 31, c: 0, f: 21 },
+    { cat: "Secondi", name: "Pesce Bianco al Forno / Vapore (Orata/Branzino/Merluzzo)", desc: "Taglia M = 1 filetto intero (~180g)", kcal: 210, p: 34, c: 0, f: 8 },
+    { cat: "Secondi", name: "Trancio di Salmone (Piastra o Forno)", desc: "Taglia M = 1 trancio (~150g)", kcal: 320, p: 31, c: 0, f: 21 },
     { cat: "Secondi", name: "Pesce Spada / Tonno Fresco alla Piastra", desc: "Trancio medio (~160g)", kcal: 240, p: 35, c: 0, f: 10 },
     { cat: "Secondi", name: "Calamari / Gamberi alla Griglia o Padella", desc: "Porzione media pulita (~180g)", kcal: 200, p: 32, c: 2, f: 7 },
     { cat: "Secondi", name: "Frittata (2 Uova + Verdure/Formaggio)", desc: "Porzione media", kcal: 260, p: 17, c: 3, f: 20 },
-    { cat: "Secondi", name: "Uova (2 Uova sode, occhio di bue o strapazzate)", desc: "2 uova medie", kcal: 170, p: 14, c: 1, f: 12 },
-    { cat: "Secondi", name: "Mozzarella / Burrata / Fior di Latte", desc: "1 Mozzarella media (125g)", kcal: 315, p: 22, c: 2, f: 24 },
-    { cat: "Secondi", name: "Ricotta Vaccina / Primo Sale", desc: "Porzione media (~120g)", kcal: 185, p: 13, c: 4, f: 13 },
-    { cat: "Secondi", name: "Bresaola o Prosciutto Crudo Sgrassato", desc: "Porzione media (~80g)", kcal: 145, p: 25, c: 0, f: 4 },
-    { cat: "Secondi", name: "Tonno in Scatola Sgocciolato", desc: "Porzione doppia (~100g sgocciolato)", kcal: 190, p: 26, c: 0, f: 9 },
+    { cat: "Secondi", name: "Uova (Sode, occhio di bue o strapazzate)", desc: "Taglia S=1 uovo | M=2 uova | L=3 uova", kcal: 170, p: 14, c: 1, f: 12 },
+    { cat: "Secondi", name: "Tonno in Scatola Sgocciolato", desc: "Taglia S=1 scatoletta | M=2 scatolette (~100g)", kcal: 190, p: 26, c: 0, f: 9 },
 
-    // CONTORNI: VERDURE ALLA GRIGLIA / PIASTRA
-    { cat: "Contorni", name: "Zucchine alla Griglia / Piastra", desc: "Piatto medio (~200g) con filo d'olio", kcal: 85, p: 3, c: 6, f: 5 },
-    { cat: "Contorni", name: "Melanzane alla Griglia / Piastra", desc: "Piatto medio (~200g) condito", kcal: 95, p: 2, c: 7, f: 6 },
-    { cat: "Contorni", name: "Peperoni Arrostiti / Alla Griglia", desc: "Piatto medio (~200g) con filo d'olio", kcal: 105, p: 2, c: 11, f: 6 },
-    { cat: "Contorni", name: "Radicchio / Trevisana ai Ferri", desc: "Porzione media grigliata", kcal: 80, p: 2, c: 5, f: 6 },
-    { cat: "Contorni", name: "Verdure Miste Grigliate", desc: "Zucchine, melanzane e peperoni (~200g)", kcal: 95, p: 3, c: 8, f: 6 },
+    // FORMAGGI & AFFETTATI (TARATI SULLE FETTE REALI: TAGLIA M = 2 FETTE ~50g)
+    { cat: "Formaggi", name: "Silano / Caciocavallo / Provola / Scamorza", desc: "S = 1 fetta (25g) | M = 2 fette (50g) | L = 3-4 fette", kcal: 165, p: 13, c: 1, f: 12 },
+    { cat: "Formaggi", name: "Asiago / Fontina / Edamer / Emmental / Gouda", desc: "S = 1 fetta (25g) | M = 2 fette (50g) | L = 3-4 fette", kcal: 185, p: 13, c: 0, f: 15 },
+    { cat: "Formaggi", name: "Parmigiano Reggiano / Grana Padano / Pecorino", desc: "S = 1 pezzetto (25g) | M = 2 pezzi (50g)", kcal: 198, p: 16, c: 0, f: 15 },
+    { cat: "Formaggi", name: "Gorgonzola / Brie / Taleggio", desc: "S = 1 cucchiaio (30g) | M = 1 spicchio (55g)", kcal: 185, p: 10, c: 0, f: 16 },
+    { cat: "Formaggi", name: "Mozzarella / Fior di Latte", desc: "S = 2-3 fette | M = Mezza (65g) | XL = 1 Intera (125g)", kcal: 165, p: 12, c: 1, f: 13 },
+    { cat: "Formaggi", name: "Ricotta Vaccina / Primo Sale / Feta", desc: "S = 2 cucchiai (50g) | M = Porzione (100g)", kcal: 155, p: 11, c: 3, f: 11 },
+    { cat: "Formaggi", name: "Stracchino / Certosa / Formaggio Spalmabile", desc: "S = 1 cucchiaio (35g) | M = Mezzo panetto (70g)", kcal: 195, p: 11, c: 2, f: 16 },
+    { cat: "Formaggi", name: "Bresaola / Fesa di Tacchino / Pollo Arrosto", desc: "S = 3-4 fette (40g) | M = Piatto medio (80g)", kcal: 115, p: 22, c: 1, f: 2 },
+    { cat: "Formaggi", name: "Prosciutto Crudo o Cotto", desc: "S = 2-3 fette (40g) | M = Porzione (75g)", kcal: 165, p: 19, c: 0, f: 10 },
 
-    // CONTORNI: VERDURE BOLLITE / AL VAPORE
-    { cat: "Contorni", name: "Zucchine Bollite / Al Vapore", desc: "Porzione media (~200g) con filo d'olio", kcal: 75, p: 3, c: 5, f: 5 },
-    { cat: "Contorni", name: "Broccoli Bolliti / Al Vapore", desc: "Porzione media (~200g) con filo d'olio", kcal: 105, p: 6, c: 8, f: 5 },
-    { cat: "Contorni", name: "Cavolfiore Bollito / Al Vapore", desc: "Porzione media (~200g) condita", kcal: 95, p: 5, c: 7, f: 5 },
-    { cat: "Contorni", name: "Spinaci / Bieta / Catalogna Lessi", desc: "Piatto medio (~200g cotti) con olio e limone", kcal: 95, p: 5, c: 5, f: 6 },
-    { cat: "Contorni", name: "Fagiolini / Cornetti Lessi", desc: "Piatto medio (~200g) con filo d'olio", kcal: 90, p: 4, c: 7, f: 5 },
-    { cat: "Contorni", name: "Carote Bollite / Al Vapore", desc: "Porzione media (~180g) condita", kcal: 105, p: 2, c: 13, f: 5 },
-    { cat: "Contorni", name: "Finocchi Lessi / Al Vapore", desc: "Porzione media (~200g) leggera", kcal: 70, p: 2, c: 4, f: 5 },
-    { cat: "Contorni", name: "Asparagi Lessi / Al Vapore", desc: "Mazzetto medio (~200g) con filo d'olio", kcal: 90, p: 5, c: 5, f: 5 },
-    { cat: "Contorni", name: "Patate Lesse / Al Vapore", desc: "2 Patate medie (~200g) con filo d'olio", kcal: 215, p: 4, c: 36, f: 6 },
+    // CONTORNI: VERDURE (TAGLIA S = 1 MANCIATA ~65g | M = MEZZO PIATTO ~140g)
+    { cat: "Contorni", name: "Zucchine alla Griglia / Piastra", desc: "S = 1 manciata (~65g) | M = mezzo piatto (~140g)", kcal: 70, p: 2, c: 5, f: 5 },
+    { cat: "Contorni", name: "Melanzane alla Griglia / Piastra", desc: "S = 3-4 fette | M = mezzo piatto condito", kcal: 80, p: 2, c: 6, f: 5 },
+    { cat: "Contorni", name: "Peperoni Arrostiti / Alla Griglia", desc: "S = 1 manciata | M = mezzo piatto con filo d'olio", kcal: 90, p: 2, c: 9, f: 5 },
+    { cat: "Contorni", name: "Radicchio / Trevisana ai Ferri", desc: "S = 1 cespo piccolo | M = porzione media", kcal: 70, p: 2, c: 4, f: 5 },
+    { cat: "Contorni", name: "Verdure Miste Grigliate", desc: "Zucchine, melanzane e peperoni", kcal: 80, p: 2, c: 7, f: 5 },
 
-    // CONTORNI: VERDURE IN PADELLA / RIPASSATE / UMIDO
-    { cat: "Contorni", name: "Zucchine Trifolate in Padella", desc: "Cotte in padella con aglio, olio e prezzemolo", kcal: 120, p: 3, c: 6, f: 9 },
-    { cat: "Contorni", name: "Spinaci / Bietole Ripassati in Padella", desc: "Porzione media (~200g) saporita", kcal: 135, p: 5, c: 5, f: 11 },
-    { cat: "Contorni", name: "Broccoli / Cime di Rapa Ripassati in Padella", desc: "Con aglio, olio e peperoncino", kcal: 135, p: 6, c: 8, f: 9 },
-    { cat: "Contorni", name: "Peperonata / Peperoni in Padella", desc: "Con cipolla, pomodoro e olio", kcal: 165, p: 3, c: 14, f: 11 },
-    { cat: "Contorni", name: "Melanzane a Funghetto (In padella)", desc: "A cubetti con pomodorini e olio", kcal: 160, p: 2, c: 9, f: 13 },
-    { cat: "Contorni", name: "Funghi Trifolati in Padella (Champignon / Misti)", desc: "Piatto medio (~200g) con aglio e prezzemolo", kcal: 110, p: 6, c: 4, f: 8 },
-    { cat: "Contorni", name: "Carciofi in Padella / Alla Romana", desc: "2-3 Carciofi medi cotti con olio e mentuccia", kcal: 140, p: 5, c: 10, f: 9 },
-    { cat: "Contorni", name: "Piselli in Umido (Con cipolla / pancetta)", desc: "Porzione contorno (~160g)", kcal: 175, p: 9, c: 19, f: 7 },
-    { cat: "Contorni", name: "Caponata / Ratatouille di Verdure Miste", desc: "Melanzane, zucchine e peperoni in umido", kcal: 170, p: 3, c: 13, f: 12 },
+    { cat: "Contorni", name: "Zucchine Bollite / Al Vapore", desc: "S = 1 manciata | M = mezzo piatto con filo d'olio", kcal: 65, p: 2, c: 4, f: 4 },
+    { cat: "Contorni", name: "Broccoli Bolliti / Al Vapore", desc: "S = 4-5 cimette | M = mezzo piatto condito", kcal: 90, p: 5, c: 7, f: 5 },
+    { cat: "Contorni", name: "Cavolfiore Bollito / Al Vapore", desc: "S = 4-5 cimette | M = mezzo piatto condito", kcal: 85, p: 4, c: 6, f: 5 },
+    { cat: "Contorni", name: "Spinaci / Bieta / Catalogna Lessi", desc: "S = 1 pugnetto | M = palla media con olio e limone", kcal: 85, p: 4, c: 4, f: 6 },
+    { cat: "Contorni", name: "Fagiolini / Cornetti Lessi", desc: "S = 1 manciata | M = mezzo piatto condito", kcal: 80, p: 3, c: 6, f: 5 },
+    { cat: "Contorni", name: "Carote Bollite / Al Vapore", desc: "S = 1 carota | M = 2 carote medie condite", kcal: 90, p: 1, c: 11, f: 5 },
+    { cat: "Contorni", name: "Finocchi Lessi / Al Vapore", desc: "S = mezzo finocchio | M = 1 finocchio condito", kcal: 65, p: 2, c: 4, f: 4 },
+    { cat: "Contorni", name: "Asparagi Lessi / Al Vapore", desc: "Mazzetto medio con filo d'olio", kcal: 80, p: 4, c: 4, f: 5 },
+    { cat: "Contorni", name: "Patate Lesse / Al Vapore", desc: "S = 1 patata piccola | M = 2 patate medie (~180g)", kcal: 195, p: 4, c: 33, f: 5 },
 
-    // CONTORNI: VERDURE AL FORNO / GRATINATE
-    { cat: "Contorni", name: "Verdure Miste al Forno", desc: "Zucchine, peperoni, melanzane o cipolle al forno", kcal: 125, p: 3, c: 10, f: 8 },
-    { cat: "Contorni", name: "Zucchine / Pomodori / Melanzane Gratinate al Forno", desc: "Con pangrattato, erbe e filo d'olio", kcal: 160, p: 4, c: 16, f: 9 },
-    { cat: "Contorni", name: "Finocchi / Cavolfiore Gratinati (Besciamella/Formaggio)", desc: "Piatto medio ricco al forno", kcal: 210, p: 8, c: 14, f: 14 },
-    { cat: "Contorni", name: "Zucca al Forno", desc: "Fette di zucca arrosto (~200g) con rosmarino", kcal: 100, p: 2, c: 11, f: 5 },
-    { cat: "Contorni", name: "Patate al Forno", desc: "Porzione media condita (~180g)", kcal: 240, p: 4, c: 36, f: 9 },
-    { cat: "Contorni", name: "Purè di Patate Casalingo", desc: "Porzione media con latte e burro", kcal: 210, p: 5, c: 28, f: 9 },
+    { cat: "Contorni", name: "Zucchine Trifolate in Padella", desc: "Cotte in padella con aglio, olio e prezzemolo", kcal: 110, p: 2, c: 5, f: 9 },
+    { cat: "Contorni", name: "Spinaci / Bietole Ripassati in Padella", desc: "Saltati in padella con olio/aglio", kcal: 120, p: 4, c: 4, f: 10 },
+    { cat: "Contorni", name: "Broccoli / Cime di Rapa Ripassati in Padella", desc: "Con aglio, olio e peperoncino", kcal: 125, p: 5, c: 7, f: 9 },
+    { cat: "Contorni", name: "Peperonata / Peperoni in Padella", desc: "Con cipolla, pomodoro e olio", kcal: 145, p: 2, c: 12, f: 10 },
+    { cat: "Contorni", name: "Melanzane a Funghetto (In padella)", desc: "A cubetti con pomodorini e olio", kcal: 145, p: 2, c: 8, f: 12 },
+    { cat: "Contorni", name: "Funghi Trifolati in Padella (Champignon / Misti)", desc: "Con aglio, olio e prezzemolo", kcal: 95, p: 5, c: 4, f: 7 },
+    { cat: "Contorni", name: "Carciofi in Padella / Alla Romana", desc: "S = 1 carciofo | M = 2 carciofi medi", kcal: 125, p: 4, c: 9, f: 8 },
+    { cat: "Contorni", name: "Piselli in Umido (Con cipolla / pancetta)", desc: "S = 2 cucchiai | M = porzione contorno", kcal: 165, p: 8, c: 18, f: 7 },
+    { cat: "Contorni", name: "Caponata / Ratatouille di Verdure Miste", desc: "Melanzane, zucchine e peperoni in umido", kcal: 155, p: 3, c: 12, f: 11 },
 
-    // CONTORNI: INSALATE E VERDURE CRUDE + LEGUMI/PANE
-    { cat: "Contorni", name: "Insalata Verde / Lattuga / Rucola Condita", desc: "Ciotola media con un filo d'olio", kcal: 70, p: 2, c: 3, f: 6 },
-    { cat: "Contorni", name: "Insalata Mista (Lattuga, Pomodori, Carote, Mais)", desc: "Ciotola media condita", kcal: 95, p: 2, c: 8, f: 6 },
-    { cat: "Contorni", name: "Pomodori all'Insalata (Con olio e origano)", desc: "Piatto medio (~200g)", kcal: 90, p: 2, c: 7, f: 6 },
-    { cat: "Contorni", name: "Pinzimonio / Finocchi e Carote Crudi", desc: "Verdure croccanti scondite o poco olio", kcal: 60, p: 2, c: 8, f: 2 },
-    { cat: "Contorni", name: "Legumi in Umido / Insalata (Fagioli/Lenticchie/Ceci)", desc: "Porzione contorno (~150g cotti)", kcal: 190, p: 11, c: 26, f: 4 },
-    { cat: "Contorni", name: "Pane Comune (1 Rosetta o 2 Fette)", desc: "Circa 60g di pane", kcal: 165, p: 5, c: 34, f: 1 },
+    { cat: "Contorni", name: "Verdure Miste al Forno", desc: "Zucchine, peperoni, melanzane al forno", kcal: 115, p: 2, c: 9, f: 8 },
+    { cat: "Contorni", name: "Zucchine / Pomodori / Melanzane Gratinate", desc: "Con pangrattato, erbe e filo d'olio", kcal: 145, p: 4, c: 14, f: 8 },
+    { cat: "Contorni", name: "Finocchi / Cavolfiore Gratinati (Con Besciamella)", desc: "Piatto medio ricco al forno", kcal: 195, p: 7, c: 13, f: 13 },
+    { cat: "Contorni", name: "Zucca al Forno", desc: "Fette di zucca arrosto con rosmarino", kcal: 90, p: 2, c: 10, f: 5 },
+    { cat: "Contorni", name: "Patate al Forno", desc: "S = 1 pugnetto | M = porzione media (~160g)", kcal: 220, p: 4, c: 33, f: 8 },
+    { cat: "Contorni", name: "Purè di Patate Casalingo", desc: "Porzione media con latte e burro", kcal: 195, p: 5, c: 26, f: 8 },
+
+    { cat: "Contorni", name: "Insalata Verde / Lattuga / Rucola Condita", desc: "Ciotola media con un filo d'olio", kcal: 65, p: 1, c: 3, f: 5 },
+    { cat: "Contorni", name: "Insalata Mista (Lattuga, Pomodori, Carote, Mais)", desc: "Ciotola media condita", kcal: 90, p: 2, c: 7, f: 6 },
+    { cat: "Contorni", name: "Pomodori all'Insalata (Con olio e origano)", desc: "1-2 Pomodori tagliati conditi", kcal: 85, p: 2, c: 6, f: 6 },
+    { cat: "Contorni", name: "Pinzimonio / Finocchi e Carote Crudi", desc: "Verdure croccanti scondite o poco olio", kcal: 50, p: 1, c: 7, f: 2 },
+    { cat: "Contorni", name: "Legumi in Umido / Insalata (Fagioli/Lenticchie/Ceci)", desc: "Porzione contorno (~140g cotti)", kcal: 180, p: 10, c: 25, f: 4 },
+    { cat: "Contorni", name: "Pane Comune (Fette o Panino)", desc: "S = 1 fetta (30g) | M = 2 fette / 1 rosetta (60g)", kcal: 165, p: 5, c: 34, f: 1 },
 
     // PIATTI UNICI & COLAZIONE
     { cat: "Pizze e Unici", name: "Piadina Farcita Casalinga", desc: "Prosciutto e formaggio", kcal: 510, p: 23, c: 48, f: 25 },
@@ -182,7 +244,7 @@ const homeFoodDB = [
     { cat: "Colazione", name: "Latte / Cappuccino + 4-5 Biscotti", desc: "Colazione classica italiana", kcal: 320, p: 10, c: 46, f: 10 },
     { cat: "Colazione", name: "Yogurt Greco + Avena e Frutta Secca", desc: "Ciotola fitness completa", kcal: 340, p: 24, c: 38, f: 10 },
     { cat: "Colazione", name: "Frutta Fresca (1 Mela, Banana o Pera)", desc: "1 Frutto medio", kcal: 95, p: 1, c: 22, f: 0 },
-    { cat: "Colazione", name: "Frutta Secca (Noci, Mandorle, Nocciole)", desc: "1 Manciata (~30g)", kcal: 185, p: 6, c: 4, f: 16 }
+    { cat: "Colazione", name: "Frutta Secca (Noci, Mandorle, Nocciole)", desc: "S = 3-4 noci (15g) | M = 1 manciata (30g)", kcal: 185, p: 6, c: 4, f: 16 }
 ];
 
 // ==================== 2. DATABASE PALESTRA & INTEGRATORI ====================
@@ -956,7 +1018,7 @@ function switchFoodModalTab(mode) {
     }
 }
 
-// --- LOGICA TAB 1: FAMIGLIA ---
+// --- LOGICA TAB 1: FAMIGLIA CON GUIDA VISIVA PORZIONI ---
 function filterHomeFoodList() {
     const cat = document.getElementById('home-food-cat').value;
     const q = document.getElementById('home-food-search').value.toLowerCase().trim();
@@ -992,6 +1054,14 @@ function selectHomeFoodItem(item) {
     document.getElementById('selected-home-food-name').innerText = item.name;
     document.getElementById('selected-home-food-desc').innerText = item.desc;
     document.getElementById('home-food-config').classList.remove('hidden');
+
+    // Aggiorna i testi sotto S, M, L, XL in base alla categoria (Contorni, Formaggi, Primi, ecc.)
+    const guide = portionGuides[item.cat] || portionGuides["Secondi"];
+    ['S', 'M', 'L', 'XL'].forEach(sz => {
+        const subEl = document.getElementById(`size-sub-${sz}`);
+        if (subEl && guide.sub[sz]) subEl.innerText = guide.sub[sz];
+    });
+
     setPortionSize('M');
     setCondimentLevel('norm');
 }
@@ -1003,6 +1073,16 @@ function setPortionSize(size) {
         if (s === size) btn.classList.add('active');
         else btn.classList.remove('active');
     });
+
+    // Aggiorna il box di spiegazione visiva per il neofita
+    if (selectedHomeFood) {
+        const guide = portionGuides[selectedHomeFood.cat] || portionGuides["Secondi"];
+        const helperText = document.getElementById('portion-visual-text');
+        if (helperText && guide.help[size]) {
+            helperText.innerHTML = guide.help[size];
+        }
+    }
+
     updateHomeFoodPreview();
 }
 
@@ -1018,7 +1098,8 @@ function setCondimentLevel(level) {
 
 function getCalculatedHomeFoodMacros() {
     if (!selectedHomeFood) return { kcal: 0, p: 0, c: 0, f: 0 };
-    const sizeMultipliers = { 'S': 0.7, 'M': 1.0, 'L': 1.35, 'XL': 1.75 };
+    // Moltiplicatori calibrati: S = metà porzione base (es. 1 fetta di Silano o 1 manciata di zucchine), M = 1x, L = 1.5x, XL = 2.0x
+    const sizeMultipliers = { 'S': 0.5, 'M': 1.0, 'L': 1.5, 'XL': 2.0 };
     const mult = sizeMultipliers[currentPortionSize] || 1.0;
 
     let p = Math.round(selectedHomeFood.p * mult);
@@ -1026,9 +1107,9 @@ function getCalculatedHomeFoodMacros() {
     let f = Math.round(selectedHomeFood.f * mult);
 
     if (currentCondimentLevel === 'low') {
-        f = Math.max(1, f - 4);
+        f = Math.max(0, f - 4);
     } else if (currentCondimentLevel === 'high') {
-        f += 10;
+        f += 9;
     }
 
     let kcal = Math.round((p * 4) + (c * 4) + (f * 9));
@@ -1048,13 +1129,15 @@ function saveHomeFoodMeal() {
     const res = getCalculatedHomeFoodMacros();
     const mealType = document.getElementById('food-meal-type').value;
     const mealTime = document.getElementById('food-meal-time').value || getCurrentTimeStr();
+    const guide = portionGuides[selectedHomeFood.cat] || portionGuides["Secondi"];
+    const sizeLabel = guide.sub[currentPortionSize] || `Taglia ${currentPortionSize}`;
     const condLabels = { 'low': 'Cond. Leggero', 'norm': 'Cond. Normale', 'high': 'Cond. Ricco' };
 
     const newEntry = {
         mealType: mealType,
         time: mealTime,
         name: selectedHomeFood.name,
-        details: `Taglia ${currentPortionSize} (${condLabels[currentCondimentLevel]})`,
+        details: `${currentPortionSize}: ${sizeLabel} (${condLabels[currentCondimentLevel]})`,
         kcal: res.kcal,
         p: res.p,
         c: res.c,
@@ -1143,7 +1226,7 @@ function saveOnlineFoodMeal() {
         mealType: mealType,
         time: mealTime,
         name: selectedOnlineFood.name,
-        details: `${g}g`,
+        details: `${g}g pesati`,
         kcal: Math.round(selectedOnlineFood.kcal100 * ratio),
         p: Math.round(selectedOnlineFood.p100 * ratio),
         c: Math.round(selectedOnlineFood.c100 * ratio),
@@ -1394,7 +1477,7 @@ function deleteFoodLog(idx) {
     renderNutritionDashboard();
 }
 
-// ==================== FUNZIONI CALENDARIO, SCHEDA E PROGRESSI RIMODERNATE ====================
+// ==================== FUNZIONI CALENDARIO, SCHEDA E PROGRESSI ====================
 function initCalendarDropdowns() {
     const yearSelect = document.getElementById('cal-year-select');
     if(!yearSelect) return;
@@ -1614,7 +1697,7 @@ function requestDeleteFromRoutine(dk, eId) {
         }
     });
 }
-function requestDeleteHistory(hk, eId) { showCustomConfirm("Cancellare lo storico per questo esercizio?", () => { localStorage.removeItem(hk); renderProgressioni(); renderMonthlyCalendar(); const cc=document.getElementById(`chart-container-${eId}`); if(cc&&!cc.classList.contains('hidden')) toggleChart(eId, hk); }); }
+function requestDeleteHistory(hk, eId) { showCustomConfirm("Cancellare tutto lo storico per questo esercizio?", () => { localStorage.removeItem(hk); renderProgressioni(); renderMonthlyCalendar(); const cc=document.getElementById(`chart-container-${eId}`); if(cc&&!cc.classList.contains('hidden')) toggleChart(eId, hk); }); }
 function showCustomConfirm(msg, cb) { document.getElementById('confirm-msg').innerText=msg; confirmCallback=cb; document.getElementById('custom-confirm-modal').classList.remove('hidden'); document.getElementById('custom-confirm-modal').classList.add('flex'); }
 function closeConfirm() { document.getElementById('custom-confirm-modal').classList.add('hidden'); document.getElementById('custom-confirm-modal').classList.remove('flex'); confirmCallback=null; }
 function confirmYes() { if(confirmCallback) confirmCallback(); closeConfirm(); }
@@ -1695,7 +1778,6 @@ function confirmSwap(dk, exId, newName) {
     }
 }
 
-// Helper per ottenere un badge categoria colorato per ogni esercizio
 function getExerciseCategoryBadge(exName) {
     const found = exerciseDB.find(e => e.name === exName);
     const cat = found ? found.category : "Custom";
@@ -1712,7 +1794,7 @@ function getExerciseCategoryBadge(exName) {
     return `<span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${cls}">${cat}</span>`;
 }
 
-// ==================== RENDER SCHEDA ALLENAMENTO (NUOVO DESIGN MODULARE) ====================
+// ==================== RENDER SCHEDA ALLENAMENTO ====================
 function renderWorkouts() {
     const c = document.getElementById('workout-container'); c.innerHTML = '';
     const targetDate = document.getElementById('prog-date').value || new Date().toISOString().split('T')[0];
@@ -1742,7 +1824,6 @@ function renderWorkouts() {
             : 'bg-slate-900 hover:bg-slate-700 text-amber-400 border border-slate-700';
         
         let html = `<div id="tab-${key}" class="giorno-tab tab-content">
-            <!-- Header Giorno Stile Dashboard -->
             <div class="mb-4 bg-slate-800/90 p-4 rounded-2xl border border-slate-700/80 shadow-xl flex justify-between items-center">
                 <div>
                     <div class="flex items-center gap-2">
@@ -1789,12 +1870,11 @@ function renderWorkouts() {
 
                     <div id="${ex.id}-acc" class="accordion-content px-3.5">
                         <div class="p-3 my-1 bg-slate-900/90 rounded-xl border border-slate-700/60 text-xs text-slate-300">
-                            ${ex.isDomsSub ? `<span class="text-amber-400 font-bold block mb-1"><i class="fas fa-Subway mr-1"></i>Sostituisce: ${ex.originalName}</span>` : ''}
+                            ${ex.isDomsSub ? `<span class="text-amber-400 font-bold block mb-1">Sostituisce: ${ex.originalName}</span>` : ''}
                             <span class="text-emerald-400 font-bold uppercase text-[10px] tracking-wider block mb-0.5"><i class="fas fa-check-circle mr-1"></i>Tecnica & Focus:</span>${ex.tech}
                         </div>
                     </div>
 
-                    <!-- Riquadri Modulari Serie x Rip e Recupero (Allineati al Design Alimentazione) -->
                     <div class="grid grid-cols-2 gap-2.5 px-3.5 pb-3.5 pt-1">
                         <div class="bg-slate-900/85 p-2.5 rounded-xl border border-slate-700/50 flex justify-between items-center">
                             <div>
@@ -1831,7 +1911,7 @@ function renderWorkouts() {
 
 function toggleAccordion(id) { const c=document.getElementById(id); const i=document.getElementById(id+'-icon'); if(c.classList.contains('open')){c.classList.remove('open');if(i)i.style.transform='rotate(0deg)';}else{c.classList.add('open');if(i)i.style.transform='rotate(180deg)';} }
 function editSR(id) { document.getElementById(`${id}-sr-display`).classList.add('hidden'); const i=document.getElementById(`${id}-sr-input`); i.classList.remove('hidden'); i.focus(); }
-function saveSR(id) { const v=document.getElementById(`${id}-sr-input`).value; localStorage.setItem(`${id}-sets`, v.split('x')[0]||"0"); localStorage.setItem(`${id}-reps`, v.split('x')[1]||"0"); document.getElementById(`${id}-sr-display`).innerText=v; document.getElementById(`${id}-sr-input`).classList.add('hidden'); document.getElementById(`${id}-sr-display`).classList.remove('hidden'); }
+function saveSR(id) { const v=document.getElementById(`${id}-sr-input`).value; localStorage.setItem(`${id}-sets`, v.split('x')[0]||"0"); localStorage.setItem(`${id}-reps`, v.split('x')[1]||"0"); document.getElementById(`${id}-sr-display`).innerText=v; document.getElementById(`${id}-sr-input`).classList.add('hidden'); document.getElementById(`${id}-sr-display`).classList.remove('hidden'); renderProgressioni(); }
 function editRest(id) { document.getElementById(`${id}-rest-display`).classList.add('hidden'); const i=document.getElementById(`${id}-rest-input`); i.classList.remove('hidden'); i.focus(); }
 function saveRest(id) { const v=document.getElementById(`${id}-rest-input`).value.replace('"',''); localStorage.setItem(`${id}-rest`, v); document.getElementById(`${id}-rest-display`).innerText=v+'"'; document.getElementById(`${id}-rest-input`).classList.add('hidden'); document.getElementById(`${id}-rest-display`).classList.remove('hidden'); }
 function handleEnter(e, el) { if(e.key==='Enter') el.blur(); }
@@ -1841,7 +1921,6 @@ function scrollToProgDay(dayKey) {
     const targetEl = document.getElementById(`prog-section-${dayKey}`);
     if (!targetEl) return;
 
-    // Aggiorna lo stile attivo dei pulsanti nella jump bar
     document.querySelectorAll('.jump-pill').forEach(btn => {
         btn.className = "jump-pill px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 hover:border-blue-500 flex items-center gap-1.5";
     });
@@ -1850,13 +1929,12 @@ function scrollToProgDay(dayKey) {
         activePill.className = "jump-pill px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white border border-blue-400 shadow-lg flex items-center gap-1.5";
     }
 
-    // Calcola l'offset per l'header fisso + la barra sticky
     const yOffset = -125;
     const y = targetEl.getBoundingClientRect().top + window.pageYOffset + yOffset;
     window.scrollTo({ top: y, behavior: 'smooth' });
 }
 
-// ==================== RENDER PROGRESSIONI (CON JUMP BAR E DESIGN MODULARE) ====================
+// ==================== RENDER PROGRESSIONI (CON SOTTO-RIQUADRO INTERNO E CAMPI VUOTI) ====================
 function renderProgressioni() {
     const c = document.getElementById('prog-list'); c.innerHTML = '';
     const jumpBar = document.getElementById('prog-days-jump-bar');
@@ -1877,7 +1955,7 @@ function renderProgressioni() {
         eList.forEach(ex => {
             if(currentDomsFilters.length > 0 && isHitByDoms(ex.muscles)) {
                 let sub = findDomsSubstitute(ex, eList);
-                displayList.push({...sub, id: ex.id, isDomsSub: true, originalName: ex.name, deletedFromRoutine: ex.deletedFromRoutine});
+                displayList.push({...sub, id: ex.id, isDomsSub: true, originalName: ex.name, deletedFromRoutine: ex.deletedFromRoutine, defaultSets: ex.defaultSets, defaultReps: ex.defaultReps});
             } else {
                 displayList.push(ex);
             }
@@ -1905,7 +1983,6 @@ function renderProgressioni() {
 
         if (!firstRenderedDay) firstRenderedDay = dk;
 
-        // Aggiunge il bottone Giorno X nella Jump Bar in alto
         if (jumpBar) {
             const isFirst = (dk === firstRenderedDay);
             jumpBar.innerHTML += `<button id="jump-pill-${dk}" onclick="scrollToProgDay('${dk}')" class="jump-pill px-3.5 py-1.5 rounded-xl text-xs font-bold ${isFirst ? 'bg-blue-600 text-white border border-blue-400 shadow-lg' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-blue-500'} flex items-center gap-1.5">
@@ -1939,47 +2016,62 @@ function renderProgressioni() {
                     </div>`;
                 });
             } else {
-                hH = `<div class="text-xs text-slate-500 text-center py-2">Nessun carico registrato.</div>`;
+                hH = `<div class="text-xs text-slate-500 text-center py-2">Nessuna serie registrata nei giorni passati.</div>`;
             }
             
-            let badgeHtml = (ex.isDomsSub || ex.isPastSub || ex.isSwapSub) ? `<span class="ml-2 text-[9px] bg-amber-500 text-slate-900 font-extrabold px-2 py-0.5 rounded-full shadow">SOSTITUTIVO</span>` : '';
-            if(ex.deletedFromRoutine && !ex.isPastSub && !ex.isDomsSub && !ex.isSwapSub) badgeHtml = `<span class="ml-2 text-[9px] bg-rose-900/60 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full">ARCHIVIATO</span>`;
+            let badgeHtml = (ex.isDomsSub || ex.isPastSub || ex.isSwapSub) ? `<span class="ml-1.5 text-[9px] bg-amber-500 text-slate-900 font-extrabold px-2 py-0.5 rounded-full shadow">SOSTITUTIVO</span>` : '';
+            if(ex.deletedFromRoutine && !ex.isPastSub && !ex.isDomsSub && !ex.isSwapSub) badgeHtml = `<span class="ml-1.5 text-[9px] bg-rose-900/60 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full">ARCHIVIATO</span>`;
 
-            dHtml += `<div class="bg-slate-800/90 rounded-2xl p-4 border ${ex.isDomsSub || ex.isPastSub || ex.isSwapSub ? 'border-amber-500/50' : 'border-slate-700/80'} shadow-xl ${ex.deletedFromRoutine && !ex.isPastSub ? 'opacity-75' : ''}">
-                <div class="flex justify-between items-start mb-3">
-                    <div>
-                        <div class="mb-1">${getExerciseCategoryBadge(ex.name)}${badgeHtml}</div>
-                        <h4 class="font-extrabold text-slate-100 text-sm">${ex.name}</h4>
+            const targetSets = localStorage.getItem(`${ex.id}-sets`) || ex.defaultSets || '';
+            const targetReps = localStorage.getItem(`${ex.id}-reps`) || ex.defaultReps || '';
+            const targetHint = (targetSets && targetReps) ? `<span class="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700">Scheda: ${targetSets}x${targetReps}</span>` : '';
+
+            dHtml += `<div class="bg-slate-800/90 rounded-2xl p-3.5 border ${ex.isDomsSub || ex.isPastSub || ex.isSwapSub ? 'border-amber-500/50' : 'border-slate-700/80'} shadow-xl ${ex.deletedFromRoutine && !ex.isPastSub ? 'opacity-75' : ''}">
+                
+                <!-- SOTTO-RIQUADRO INTERNO: Raggruppa Nome, Serie, Reps, Carico, Nota e Registra Serie -->
+                <div class="bg-slate-900/95 rounded-xl p-3.5 border border-blue-500/30 shadow-inner mb-3">
+                    <div class="flex justify-between items-start mb-3 border-b border-slate-800 pb-2.5">
+                        <div class="pr-2">
+                            <div class="flex flex-wrap items-center gap-1 mb-1">${getExerciseCategoryBadge(ex.name)}${badgeHtml}</div>
+                            <h4 class="font-extrabold text-white text-sm leading-snug">${ex.name}</h4>
+                        </div>
+                        ${targetHint}
                     </div>
-                    <button onclick="requestDeleteHistory('${hk}', '${ex.id}')" class="text-slate-500 hover:text-red-500 p-1"><i class="fas fa-trash-alt text-xs"></i></button>
+
+                    <!-- 3 Campi COMPLETAMENTE VUOTI (Senza numeri di esempio) -->
+                    <div class="grid grid-cols-3 gap-2.5 mb-3">
+                        <div class="text-center">
+                            <label class="text-[10px] font-bold text-blue-400 uppercase mb-1 block">Serie</label>
+                            <input type="number" id="inp-sets-${ex.id}" class="prog-empty-input w-full rounded-xl p-2 text-white font-extrabold text-base text-center outline-none">
+                        </div>
+                        <div class="text-center">
+                            <label class="text-[10px] font-bold text-amber-400 uppercase mb-1 block">Reps</label>
+                            <input type="number" id="inp-reps-${ex.id}" class="prog-empty-input w-full rounded-xl p-2 text-white font-extrabold text-base text-center outline-none">
+                        </div>
+                        <div class="text-center">
+                            <label class="text-[10px] font-bold text-emerald-400 uppercase mb-1 block">Carico (Kg)</label>
+                            <input type="number" step="0.5" id="inp-weight-${ex.id}" class="prog-empty-input w-full rounded-xl p-2 text-white font-extrabold text-base text-center outline-none">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="toggleNote('note-${ex.id}')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold shrink-0"><i class="fas fa-comment-medical text-blue-400 mr-1"></i> Nota</button>
+                        <button onclick="saveProgression('${ex.id}', '${hk}', ${ex.isDomsSub || ex.isPastSub || ex.isSwapSub || false})" id="btn-save-${ex.id}" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl py-2.5 px-4 text-xs shadow-lg transition-colors flex items-center justify-center gap-1.5"><i class="fas fa-plus-circle"></i> Registra Serie</button>
+                    </div>
+                    <input type="text" id="note-${ex.id}" placeholder="Scrivi una nota tecnica o sensazione..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs hidden mt-2.5 outline-none focus:border-blue-500">
                 </div>
 
-                <!-- 3 Box Modulari Serie / Reps / Kg (Stile Alimentazione) -->
-                <div class="grid grid-cols-3 gap-2.5 mb-3">
-                    <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-700/60 text-center">
-                        <label class="text-[10px] font-bold text-blue-400 uppercase mb-1 block">Serie</label>
-                        <input type="number" id="inp-sets-${ex.id}" placeholder="3" class="w-full bg-transparent text-white font-extrabold text-base text-center outline-none">
+                <!-- FUORI DAL RIQUADRO INTERNO: Storico Registrazioni Passate & Grafico -->
+                <div class="px-1">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider"><i class="fas fa-history mr-1 text-slate-500"></i>Storico Registrazioni</span>
+                        <button onclick="requestDeleteHistory('${hk}', '${ex.id}')" title="Svuota storico esercizio" class="text-[10px] text-slate-500 hover:text-red-400 flex items-center gap-1"><i class="fas fa-trash-alt"></i> Svuota</button>
                     </div>
-                    <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-700/60 text-center">
-                        <label class="text-[10px] font-bold text-amber-400 uppercase mb-1 block">Reps</label>
-                        <input type="number" id="inp-reps-${ex.id}" placeholder="10" class="w-full bg-transparent text-white font-extrabold text-base text-center outline-none">
-                    </div>
-                    <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-700/60 text-center">
-                        <label class="text-[10px] font-bold text-emerald-400 uppercase mb-1 block">Carico (Kg)</label>
-                        <input type="number" step="0.5" id="inp-weight-${ex.id}" placeholder="Kg" class="w-full bg-transparent text-white font-extrabold text-base text-center outline-none">
-                    </div>
+                    <div class="bg-slate-900/70 rounded-xl p-2.5 border border-slate-700/50 mb-2.5 max-h-40 overflow-y-auto no-scrollbar">${hH}</div>
+
+                    <button onclick="toggleChart('${ex.id}', '${hk}')" class="w-full py-2 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-700/50 text-center text-xs font-bold text-blue-400 transition-colors"><i class="fas fa-chart-area mr-1"></i> Analisi Grafica 1RM & Volume</button>
+                    <div id="chart-container-${ex.id}" class="hidden mt-2.5 bg-slate-900 p-2.5 rounded-xl border border-slate-700"><canvas id="chart-${ex.id}"></canvas></div>
                 </div>
-
-                <div class="flex items-center gap-2 mb-3">
-                    <button onclick="toggleNote('note-${ex.id}')" class="bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold shrink-0"><i class="fas fa-comment-medical text-blue-400 mr-1"></i> Nota</button>
-                    <button onclick="saveProgression('${ex.id}', '${hk}', ${ex.isDomsSub || ex.isPastSub || ex.isSwapSub || false})" id="btn-save-${ex.id}" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl py-2.5 px-4 text-xs shadow-lg transition-colors flex items-center justify-center gap-1.5"><i class="fas fa-check-circle"></i> Registra Serie</button>
-                </div>
-                <input type="text" id="note-${ex.id}" placeholder="Scrivi una nota tecnica o sensazione..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white text-xs hidden mb-3 outline-none focus:border-blue-500">
-
-                <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-700/50 mb-3 max-h-44 overflow-y-auto no-scrollbar">${hH}</div>
-
-                <button onclick="toggleChart('${ex.id}', '${hk}')" class="w-full py-2 rounded-xl bg-slate-900/70 hover:bg-slate-900 border border-slate-700/50 text-center text-xs font-bold text-blue-400 transition-colors"><i class="fas fa-chart-area mr-1"></i> Analisi Grafica 1RM & Volume</button>
-                <div id="chart-container-${ex.id}" class="hidden mt-3 bg-slate-900 p-2.5 rounded-xl border border-slate-700"><canvas id="chart-${ex.id}"></canvas></div>
             </div>`;
         });
         dHtml += `</div></div>`;

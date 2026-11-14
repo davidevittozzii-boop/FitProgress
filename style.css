@@ -54,6 +54,19 @@ body {
     font-weight: 700;
 }
 
+/* Campi vuoti inserimento progressi ben visibili */
+.prog-empty-input {
+    background-color: #0b1120;
+    border: 1.5px dashed #475569;
+    transition: all 0.2s ease;
+}
+.prog-empty-input:focus {
+    border-style: solid;
+    border-color: #3b82f6;
+    background-color: #0f172a;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
 /* Menu a tendina / Accordion */
 .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
 .accordion-content.open { max-height: 1500px; }

@@ -181,7 +181,6 @@
         
         <!-- ==================== 3. ALIMENTAZIONE ==================== -->
         <div id="main-tab-alimentazione-content" class="tab-content">
-            <!-- Barra Superiore Data + Tasto DIARIO -->
             <div class="mb-4 bg-slate-800/90 p-3.5 rounded-2xl border border-slate-700/80 flex items-center justify-between gap-2 shadow-xl">
                 <div class="flex items-center gap-2.5 flex-1">
                     <div class="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
@@ -197,7 +196,6 @@
                 </button>
             </div>
 
-            <!-- Avviso se mancano i dati nel profilo -->
             <div id="diet-profile-warning" class="hidden mb-4 bg-amber-900/30 border border-amber-600/50 rounded-2xl p-3 text-xs text-amber-200 flex items-center justify-between gap-3">
                 <div><i class="fas fa-info-circle text-amber-400 mr-1"></i> Inserisci Peso, Altezza ed Età nel <b>Profilo</b> per calcolare i tuoi macro personalizzati.</div>
                 <button onclick="switchMainTab('profilo'); toggleAccordion('prof-data-acc');" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-1.5 rounded-lg shrink-0">Vai</button>
@@ -213,12 +211,10 @@
                     <span id="kcal-status-badge" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-700 text-slate-300">In corso</span>
                 </div>
 
-                <!-- Barra Calorie Principale -->
                 <div class="w-full h-3.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700/70 my-3">
                     <div id="kcal-progress-bar" class="h-full bg-blue-500 transition-all duration-300 rounded-full" style="width: 0%"></div>
                 </div>
 
-                <!-- I 3 Macronutrienti -->
                 <div class="grid grid-cols-3 gap-2.5 pt-2 border-t border-slate-700/60">
                     <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/50">
                         <div class="flex justify-between items-center text-xs mb-1">
@@ -273,7 +269,6 @@
                 </div>
             </div>
 
-            <!-- Pulsanti Principali: Registra Pasto + Check Energia -->
             <div class="flex gap-2.5 mb-6">
                 <button onclick="openFoodModal()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-2xl shadow-lg transition-colors flex items-center justify-center gap-2 text-sm">
                     <i class="fas fa-plus-circle text-base"></i> Registra Pasto
@@ -283,7 +278,6 @@
                 </button>
             </div>
 
-            <!-- Lista Pasti della Giornata Selezionata -->
             <div class="flex items-center gap-2 mb-3">
                 <div class="h-px bg-slate-700 flex-1"></div>
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Pasti Registrati</h3>
@@ -292,9 +286,8 @@
             <div id="daily-meals-list" class="space-y-3"></div>
         </div>
 
-        <!-- ==================== 4. PROGRESSIONI (CON JUMP BAR GIORNI) ==================== -->
+        <!-- ==================== 4. PROGRESSIONI ==================== -->
         <div id="main-tab-progressioni-content" class="tab-content">
-            <!-- Card Data + Scanner Mappa Muscolare -->
             <div class="mb-3 bg-slate-800/90 p-3.5 rounded-2xl border border-slate-700/80 flex items-center justify-between gap-2 shadow-xl">
                 <div class="flex items-center gap-2.5 flex-1">
                     <div class="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
@@ -377,7 +370,7 @@
         </div>
     </div>
 
-    <!-- ==================== MODALE AGGIUNGI PASTO (4 SEZIONI) ==================== -->
+    <!-- ==================== MODALE AGGIUNGI PASTO (CON GUIDA VISIVA PORZIONI) ==================== -->
     <div id="food-modal" class="fixed inset-0 bg-slate-950/95 z-[140] hidden flex-col items-center pt-6 px-4 overflow-y-auto pb-10">
         <div class="w-full max-w-md bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
@@ -418,7 +411,7 @@
                 </button>
             </div>
 
-            <!-- TAB 1: PIATTI DI FAMIGLIA -->
+            <!-- TAB 1: PIATTI DI FAMIGLIA (CON GUIDA VISIVA DINAMICA) -->
             <div id="food-tab-home" class="space-y-4">
                 <div>
                     <div class="flex gap-2 mb-2">
@@ -426,37 +419,56 @@
                             <option value="Tutti">Tutte</option>
                             <option value="Primi">Primi</option>
                             <option value="Secondi">Secondi</option>
-                            <option value="Contorni">Contorni</option>
+                            <option value="Formaggi">Formaggi & Affettati</option>
+                            <option value="Contorni">Contorni & Verdure</option>
                             <option value="Colazione">Colazione</option>
                             <option value="Pizze e Unici">Piatti Unici</option>
                         </select>
-                        <input type="text" id="home-food-search" oninput="filterHomeFoodList()" placeholder="Cerca piatto o verdura..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-2 text-white text-xs outline-none focus:border-blue-500">
+                        <input type="text" id="home-food-search" oninput="filterHomeFoodList()" placeholder="Es. Zucchine, Silano, Pasta..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-2 text-white text-xs outline-none focus:border-blue-500">
                     </div>
                     <div id="home-food-list" class="max-h-44 overflow-y-auto bg-slate-900 rounded-xl border border-slate-700 divide-y divide-slate-800"></div>
                 </div>
 
-                <div id="home-food-config" class="hidden bg-slate-900/90 p-3.5 rounded-xl border border-blue-500/40 space-y-4">
-                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                        <span id="selected-home-food-name" class="font-bold text-blue-400 text-sm">Piatto</span>
-                        <span id="selected-home-food-desc" class="text-[10px] text-slate-400"></span>
+                <div id="home-food-config" class="hidden bg-slate-900/90 p-3.5 rounded-xl border border-blue-500/40 space-y-3.5">
+                    <div class="border-b border-slate-800 pb-2">
+                        <div id="selected-home-food-name" class="font-extrabold text-blue-400 text-sm">Piatto</div>
+                        <div id="selected-home-food-desc" class="text-[11px] text-slate-400 mt-0.5"></div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-2"><i class="fas fa-expand-arrows-alt text-blue-400 mr-1"></i>1. Taglia Porzione</label>
-                        <div class="grid grid-cols-4 gap-2">
-                            <button type="button" onclick="setPortionSize('S')" id="size-btn-S" class="choice-btn bg-slate-800 border border-slate-700 rounded-lg p-2 text-center"><div class="font-extrabold text-sm">S</div><div class="text-[9px] text-slate-400">Piccola</div></button>
-                            <button type="button" onclick="setPortionSize('M')" id="size-btn-M" class="choice-btn active bg-slate-800 border border-slate-700 rounded-lg p-2 text-center"><div class="font-extrabold text-sm">M</div><div class="text-[9px] text-slate-200">Media</div></button>
-                            <button type="button" onclick="setPortionSize('L')" id="size-btn-L" class="choice-btn bg-slate-800 border border-slate-700 rounded-lg p-2 text-center"><div class="font-extrabold text-sm">L</div><div class="text-[9px] text-slate-400">Piena</div></button>
-                            <button type="button" onclick="setPortionSize('XL')" id="size-btn-XL" class="choice-btn bg-slate-800 border border-slate-700 rounded-lg p-2 text-center"><div class="font-extrabold text-sm">XL</div><div class="text-[9px] text-slate-400">Bis</div></button>
+                        <label class="block text-xs font-bold text-slate-200 mb-2"><i class="fas fa-hand-paper text-blue-400 mr-1"></i>1. Quanto ne hai nel piatto? (Scegli ad occhio)</label>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button type="button" onclick="setPortionSize('S')" id="size-btn-S" class="choice-btn bg-slate-800 border border-slate-700 rounded-xl p-2 text-center">
+                                <div class="font-extrabold text-sm">S</div>
+                                <div id="size-sub-S" class="text-[9px] text-slate-300 leading-tight mt-0.5">Piccola</div>
+                            </button>
+                            <button type="button" onclick="setPortionSize('M')" id="size-btn-M" class="choice-btn active bg-slate-800 border border-slate-700 rounded-xl p-2 text-center">
+                                <div class="font-extrabold text-sm">M</div>
+                                <div id="size-sub-M" class="text-[9px] text-slate-200 leading-tight mt-0.5">Media</div>
+                            </button>
+                            <button type="button" onclick="setPortionSize('L')" id="size-btn-L" class="choice-btn bg-slate-800 border border-slate-700 rounded-xl p-2 text-center">
+                                <div class="font-extrabold text-sm">L</div>
+                                <div id="size-sub-L" class="text-[9px] text-slate-300 leading-tight mt-0.5">Abbondante</div>
+                            </button>
+                            <button type="button" onclick="setPortionSize('XL')" id="size-btn-XL" class="choice-btn bg-slate-800 border border-slate-700 rounded-xl p-2 text-center">
+                                <div class="font-extrabold text-sm">XL</div>
+                                <div id="size-sub-XL" class="text-[9px] text-slate-300 leading-tight mt-0.5">Doppia/Bis</div>
+                            </button>
+                        </div>
+
+                        <!-- BOX GUIDA VISIVA: Spiega esattamente a cosa corrisponde la taglia selezionata -->
+                        <div id="portion-visual-helper" class="mt-2.5 bg-blue-950/40 border border-blue-500/30 rounded-xl p-2.5 text-[11px] text-blue-200 leading-snug flex items-start gap-2">
+                            <i class="fas fa-eye text-blue-400 mt-0.5 shrink-0"></i>
+                            <span id="portion-visual-text">Seleziona una taglia per vedere a cosa corrisponde nel piatto.</span>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-2"><i class="fas fa-tint text-amber-400 mr-1"></i>2. Condimento in cottura</label>
+                        <label class="block text-xs font-bold text-slate-200 mb-2"><i class="fas fa-tint text-amber-400 mr-1"></i>2. Quanto era condito / unto?</label>
                         <div class="grid grid-cols-3 gap-2">
-                            <button type="button" onclick="setCondimentLevel('low')" id="cond-btn-low" class="choice-btn bg-slate-800 border border-slate-700 rounded-lg p-2 text-center"><div class="font-bold text-xs">Leggero</div><div class="text-[9px] text-slate-400">Poco olio</div></button>
-                            <button type="button" onclick="setCondimentLevel('norm')" id="cond-btn-norm" class="choice-btn active bg-slate-800 border border-slate-700 rounded-lg p-2 text-center"><div class="font-bold text-xs">Normale</div><div class="text-[9px] text-slate-200">Casalingo</div></button>
-                            <button type="button" onclick="setCondimentLevel('high')" id="cond-btn-high" class="choice-btn bg-slate-800 border border-slate-700 rounded-lg p-2 text-center"><div class="font-bold text-xs">Ricco</div><div class="text-[9px] text-slate-400">+10g Grassi</div></button>
+                            <button type="button" onclick="setCondimentLevel('low')" id="cond-btn-low" class="choice-btn bg-slate-800 border border-slate-700 rounded-xl p-2 text-center"><div class="font-bold text-xs">Leggero</div><div class="text-[9px] text-slate-400">Scondito / Vapore</div></button>
+                            <button type="button" onclick="setCondimentLevel('norm')" id="cond-btn-norm" class="choice-btn active bg-slate-800 border border-slate-700 rounded-xl p-2 text-center"><div class="font-bold text-xs">Normale</div><div class="text-[9px] text-slate-200">1 filo d'olio</div></button>
+                            <button type="button" onclick="setCondimentLevel('high')" id="cond-btn-high" class="choice-btn bg-slate-800 border border-slate-700 rounded-xl p-2 text-center"><div class="font-bold text-xs">Ricco / Unto</div><div class="text-[9px] text-slate-400">Molto olio/sugo</div></button>
                         </div>
                     </div>
 
@@ -707,7 +719,7 @@
         </div>
     </div>
 
-    <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-950/95 z-[150] hidden flex-col items-center justify-center px-4">
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-950/95 z-[250] hidden flex-col items-center justify-center px-4">
         <div class="w-full max-w-sm bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-2xl text-center">
             <div class="text-red-500 text-4xl mb-4"><i class="fas fa-exclamation-triangle"></i></div>
             <h2 id="confirm-msg" class="text-base font-bold text-slate-100 mb-6">Sei sicuro?</h2>
