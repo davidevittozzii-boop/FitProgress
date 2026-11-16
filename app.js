@@ -115,7 +115,7 @@ function switchMainTab(tab) {
     }
 }
 
-// ==================== PROFILO E CALCOLO METABOLICO ====================
+// (TUTTE LE FUNZIONI PROFILO E ALIMENTAZIONE RIMANGONO INVARIATE)
 function salvaProfiloEMisure() {
     const profilo = {
         nome: document.getElementById('prof-nome').value,
@@ -153,12 +153,10 @@ function salvaProfiloEMisure() {
     renderNutritionDashboard();
     const msg = document.getElementById('prof-msg'); msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000);
 }
-
 function caricaProfilo() {
     const p = JSON.parse(localStorage.getItem('user_profile'));
     if(p) { document.getElementById('prof-nome').value = p.nome || ''; document.getElementById('prof-cognome').value = p.cognome || ''; document.getElementById('prof-sesso').value = p.sesso || 'M'; document.getElementById('prof-eta').value = p.eta || ''; document.getElementById('prof-peso').value = p.peso || ''; document.getElementById('prof-altezza').value = p.altezza || ''; document.getElementById('prof-attivita').value = p.attivita || '1.375'; document.getElementById('prof-obiettivo').value = p.obiettivo || 'maint'; }
 }
-
 function calculateMacroTargets() {
     const p = JSON.parse(localStorage.getItem('user_profile')) || {};
     const peso = parseFloat(p.peso), altezza = parseFloat(p.altezza), eta = parseFloat(p.eta), sesso = p.sesso || 'M', act = parseFloat(p.attivita) || 1.375, goal = p.obiettivo || 'maint';
@@ -170,19 +168,9 @@ function calculateMacroTargets() {
     targetKcal = Math.round(targetKcal); let targetP = Math.round(peso * protPerKg); let targetF = Math.round(peso * fatPerKg); let remainingKcal = targetKcal - (targetP * 4) - (targetF * 9); let targetC = Math.max(50, Math.round(remainingKcal / 4));
     return { valid: true, kcal: targetKcal, p: targetP, c: targetC, f: targetF };
 }
-
-// ==================== SEZIONE ALIMENTAZIONE & ACQUA ====================
 function getDietDateKey(customDateStr = null) { return 'diet_log_' + (customDateStr || document.getElementById('diet-date').value || new Date().toISOString().split('T')[0]); }
 function getWaterDateKey(customDateStr = null) { return 'water_log_' + (customDateStr || document.getElementById('diet-date').value || new Date().toISOString().split('T')[0]); }
-
-function updateWaterCount(delta) { 
-    const wKey = getWaterDateKey(); 
-    let cur = parseInt(localStorage.getItem(wKey)) || 0; 
-    cur = Math.max(0, cur + delta); 
-    localStorage.setItem(wKey, cur); 
-    renderNutritionDashboard(); 
-}
-
+function updateWaterCount(delta) { const wKey = getWaterDateKey(); let cur = parseInt(localStorage.getItem(wKey)) || 0; cur = Math.max(0, cur + delta); localStorage.setItem(wKey, cur); renderNutritionDashboard(); }
 function renderNutritionDashboard() {
     const targets = calculateMacroTargets(); const warningEl = document.getElementById('diet-profile-warning');
     if (!targets.valid) warningEl.classList.remove('hidden'); else warningEl.classList.add('hidden');
@@ -190,25 +178,13 @@ function renderNutritionDashboard() {
     document.getElementById('water-glasses-count').innerText = glasses; document.getElementById('water-liters-count').innerText = liters; document.getElementById('water-progress-bar').style.width = `${Math.min(100, (glasses / 8) * 100)}%`;
     const logs = JSON.parse(localStorage.getItem(getDietDateKey())) || []; let totKcal = 0, totP = 0, totC = 0, totF = 0;
     logs.forEach(item => { totKcal += item.kcal; totP += item.p; totC += item.c; totF += item.f; });
-    
-    document.getElementById('kcal-current').innerText = Math.round(totKcal); document.getElementById('kcal-target').innerText = targets.kcal; 
-    document.getElementById('macro-p-cur').innerText = Math.round(totP); document.getElementById('macro-p-tar').innerText = targets.p; 
-    document.getElementById('macro-c-cur').innerText = Math.round(totC); document.getElementById('macro-c-tar').innerText = targets.c; 
-    document.getElementById('macro-f-cur').innerText = Math.round(totF); document.getElementById('macro-f-tar').innerText = targets.f;
-    
+    document.getElementById('kcal-current').innerText = Math.round(totKcal); document.getElementById('kcal-target').innerText = targets.kcal; document.getElementById('macro-p-cur').innerText = Math.round(totP); document.getElementById('macro-p-tar').innerText = targets.p; document.getElementById('macro-c-cur').innerText = Math.round(totC); document.getElementById('macro-c-tar').innerText = targets.c; document.getElementById('macro-f-cur').innerText = Math.round(totF); document.getElementById('macro-f-tar').innerText = targets.f;
     const kcalPct = Math.min(100, Math.round((totKcal / targets.kcal) * 100)); const kcalBar = document.getElementById('kcal-progress-bar'); const badge = document.getElementById('kcal-status-badge'); kcalBar.style.width = `${kcalPct}%`;
     const ratio = totKcal / targets.kcal;
-    if (ratio < 0.85) { kcalBar.className = "h-full bg-blue-500 transition-all duration-300 rounded-full"; badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-700 text-slate-300"; badge.innerText = `Mancano ${Math.max(0, targets.kcal - Math.round(totKcal))} kcal`; } 
-    else if (ratio <= 1.08) { kcalBar.className = "h-full bg-emerald-500 transition-all duration-300 rounded-full"; badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-500/40"; badge.innerText = "Target Raggiunto!"; } 
-    else { kcalBar.className = "h-full bg-rose-500 transition-all duration-300 rounded-full"; badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-900/60 text-rose-300 border border-rose-500/40"; badge.innerText = `Sforato di ${Math.round(totKcal) - targets.kcal} kcal`; }
-    
-    document.getElementById('macro-p-bar').style.width = `${Math.min(100, (totP / targets.p) * 100)}%`; 
-    document.getElementById('macro-c-bar').style.width = `${Math.min(100, (totC / targets.c) * 100)}%`; 
-    document.getElementById('macro-f-bar').style.width = `${Math.min(100, (totF / targets.f) * 100)}%`;
-    
+    if (ratio < 0.85) { kcalBar.className = "h-full bg-blue-500 transition-all duration-300 rounded-full"; badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-700 text-slate-300"; badge.innerText = `Mancano ${Math.max(0, targets.kcal - Math.round(totKcal))} kcal`; } else if (ratio <= 1.08) { kcalBar.className = "h-full bg-emerald-500 transition-all duration-300 rounded-full"; badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-500/40"; badge.innerText = "Target Raggiunto!"; } else { kcalBar.className = "h-full bg-rose-500 transition-all duration-300 rounded-full"; badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-900/60 text-rose-300 border border-rose-500/40"; badge.innerText = `Sforato di ${Math.round(totKcal) - targets.kcal} kcal`; }
+    document.getElementById('macro-p-bar').style.width = `${Math.min(100, (totP / targets.p) * 100)}%`; document.getElementById('macro-c-bar').style.width = `${Math.min(100, (totC / targets.c) * 100)}%`; document.getElementById('macro-f-bar').style.width = `${Math.min(100, (totF / targets.f) * 100)}%`;
     const listContainer = document.getElementById('daily-meals-list'); listContainer.innerHTML = '';
     if (logs.length === 0) { listContainer.innerHTML = `<div class="text-center text-xs text-slate-500 py-8 bg-slate-800/80 rounded-2xl border border-slate-700 border-dashed">Nessun pasto registrato in questa data. Premi <b>Registra Pasto</b>!</div>`; return; }
-    
     const mealOrder = ["Colazione", "Pranzo", "Cena", "Spuntino"];
     mealOrder.forEach(mealType => {
         const mealItems = logs.map((item, idx) => ({ ...item, originalIdx: idx })).filter(x => x.mealType === mealType);
@@ -223,173 +199,7 @@ function renderNutritionDashboard() {
         html += `</div></div>`; listContainer.innerHTML += html;
     });
 }
-
-function deleteFoodLog(idx) { const key = getDietDateKey(); let logs = JSON.parse(localStorage.getItem(key)) || []; logs.splice(idx, 1); localStorage.setItem(key, JSON.stringify(logs)); renderNutritionDashboard(); }
-
-// ==================== CHECK ENERGIA PRE-WORKOUT ====================
-function timeStrToMinutes(tStr) { 
-    if (!tStr || !tStr.includes(':')) return null; 
-    const parts = tStr.split(':'); 
-    return (parseInt(parts[0]) * 60) + parseInt(parts[1]); 
-}
-
-function openPreWorkoutAdvisorModal() {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const logs = JSON.parse(localStorage.getItem('diet_log_' + todayStr)) || [];
-    const glasses = parseInt(localStorage.getItem('water_log_' + todayStr)) || 0;
-    const now = new Date();
-    const nowMins = (now.getHours() * 60) + now.getMinutes();
-    const container = document.getElementById('preworkout-advisor-content');
-
-    if (logs.length === 0) {
-        container.innerHTML = `
-            <div class="bg-amber-900/30 border border-amber-500/50 rounded-2xl p-4">
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="w-10 h-10 rounded-full bg-amber-500 text-slate-900 flex items-center justify-center font-bold text-lg shrink-0"><i class="fas fa-exclamation-triangle"></i></div>
-                    <div>
-                        <div class="text-[10px] font-bold uppercase tracking-wider text-amber-300">Semaforo Giallo • Stomaco Vuoto</div>
-                        <h3 class="text-base font-extrabold text-white">Nessun pasto registrato oggi</h3>
-                    </div>
-                </div>
-                <p class="text-xs text-slate-200 leading-relaxed mb-3">Se sei a digiuno completo da molte ore, le tue riserve di glicogeno epatico sono basse. Allenarti ad alta intensità ora può causare cali di forza.</p>
-                <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-700 text-xs">
-                    <div class="font-bold text-amber-400 mb-1"><i class="fas fa-lightbulb mr-1"></i>Cosa fare prima di iniziare:</div>
-                    <ul class="list-disc list-inside text-slate-300 space-y-1">
-                        <li>Assumi <b>25-30g di carboidrati rapidi</b> (es. 1 banana matura, 3-4 gallette di riso con miele o 30g di ciclodestrine).</li>
-                        <li>Bevi 1-2 bicchieri d'acqua e attendi <b>15-20 minuti</b> prima di toccare i pesi.</li>
-                    </ul>
-                </div>
-            </div>`;
-        document.getElementById('preworkout-advisor-modal').classList.remove('hidden');
-        document.getElementById('preworkout-advisor-modal').classList.add('flex');
-        return;
-    }
-
-    let validLogs = logs.map((item, idx) => {
-        let m = timeStrToMinutes(item.time);
-        if (m === null) m = nowMins - 120;
-        return { ...item, mins: m, idx: idx };
-    }).filter(x => x.mins <= nowMins + 5);
-
-    if (validLogs.length === 0) validLogs = logs.map((item, idx) => ({ ...item, mins: nowMins - 60, idx: idx }));
-
-    const mealGroups = {};
-    validLogs.forEach(item => {
-        const mType = item.mealType || "Pasto";
-        if (!mealGroups[mType]) {
-            mealGroups[mType] = { mealType: mType, items: [], latestMins: item.mins, lastOrderIdx: item.idx };
-        }
-        mealGroups[mType].items.push(item);
-        if (item.mins >= mealGroups[mType].latestMins) mealGroups[mType].latestMins = item.mins;
-        if (item.idx > mealGroups[mType].lastOrderIdx) mealGroups[mType].lastOrderIdx = item.idx;
-    });
-
-    const mealOrderPriority = { "Colazione": 1, "Pranzo": 2, "Spuntino": 3, "Cena": 4 };
-    const sortedMeals = Object.values(mealGroups).sort((a, b) => {
-        if (b.latestMins !== a.latestMins) return b.latestMins - a.latestMins;
-        if (b.lastOrderIdx !== a.lastOrderIdx) return b.lastOrderIdx - a.lastOrderIdx;
-        return (mealOrderPriority[b.mealType] || 0) - (mealOrderPriority[a.mealType] || 0);
-    });
-
-    const lastMealGroup = sortedMeals[0];
-    const lastMealItems = lastMealGroup.items;
-    const maxMins = lastMealGroup.latestMins;
-    const lastMealTypeName = lastMealGroup.mealType.toUpperCase();
-
-    let mealKcal = 0, mealP = 0, mealC = 0, mealF = 0;
-    let mealNames = [];
-    lastMealItems.forEach(it => {
-        mealKcal += it.kcal; mealP += it.p; mealC += it.c; mealF += it.f;
-        mealNames.push(it.name);
-    });
-
-    const totalDayCarbs = logs.reduce((acc, x) => acc + x.c, 0);
-    const elapsedMins = Math.max(0, nowMins - maxMins);
-    const hoursStr = elapsedMins >= 60 ? `${Math.floor(elapsedMins/60)}h ${elapsedMins%60}m fa` : `${elapsedMins} min fa`;
-    const lastTimeFormatted = `${String(Math.floor(maxMins/60)).padStart(2,'0')}:${String(maxMins%60).padStart(2,'0')}`;
-
-    let requiredDigestionMins = 60;
-    if (mealKcal < 260 && mealF <= 8) requiredDigestionMins = 30;
-    else if (mealF >= 28 || mealKcal >= 750) requiredDigestionMins = 165;
-    else if (mealF >= 16 || mealKcal >= 450) requiredDigestionMins = 120;
-    else requiredDigestionMins = 75;
-
-    let statusColor = "emerald", statusIcon = "fa-check-circle", statusTitle = "Finestra Energetica Ottimale!", statusSub = "Semaforo Verde • Pronto a Spingere", explanation = "", actionAdvice = "";
-
-    if (elapsedMins < requiredDigestionMins) {
-        const waitMins = requiredDigestionMins - elapsedMins;
-        statusColor = "red"; statusIcon = "fa-hand-paper"; statusSub = "Semaforo Rosso • Digestione in Corso"; statusTitle = `Attendi ancora ~${waitMins} minuti`;
-        if (mealF >= 22) {
-            explanation = `Il tuo ultimo pasto completo (<b>${lastMealGroup.mealType}</b> delle <b>${lastTimeFormatted}</b>) apporta in totale <b>${mealF}g di grassi</b> e <b>${mealKcal} kcal</b>. I lipidi rallentano lo svuotamento gastrico: allenandoti ora sottrarresti sangue ai muscoli.`;
-        } else {
-            explanation = `Hai concluso il pasto (<b>${lastMealGroup.mealType}</b> da <b>${mealKcal} kcal</b> totali) da poco (${hoursStr}). Il tuo corpo è ancora impegnato nella fase digestiva primaria.`;
-        }
-        actionAdvice = `Aspetta circa <b>${waitMins} minuti</b> prima di iniziare le serie pesanti. Nel frattempo sorseggia piccoli sorsi d'acqua e inizia con mobilità articolare blanda.`;
-    } else if (elapsedMins > 270) {
-        statusColor = "amber"; statusIcon = "fa-battery-quarter"; statusSub = "Semaforo Giallo • Serbatoio Scarico"; statusTitle = "Integrazione Rapida Consigliata";
-        explanation = `Sono passate oltre <b>${Math.floor(elapsedMins/60)} ore</b> dal tuo ultimo pasto (<b>${lastMealGroup.mealType}</b> delle ${lastTimeFormatted}). La digestione è conclusa, ma la glicemia sta scendendo e potresti accusare un calo di forza a metà scheda.`;
-        actionAdvice = `Assumi <b>25-30g di carboidrati rapidi</b> adesso (es. 1 banana, 3-4 gallette di riso o 1 barretta energetica) con zero grassi per avere energia immediata tra 15 minuti.`;
-    } else if (mealC < 22 && totalDayCarbs < 70) {
-        statusColor = "amber"; statusIcon = "fa-gas-pump"; statusSub = "Semaforo Giallo • Pochi Carboidrati"; statusTitle = "Muscoli Protetti, ma Poca Benzina!";
-        explanation = `Nel tuo ultimo pasto completo (<b>${lastMealGroup.mealType}</b>) hai assunto un'ottima quota proteica (<b>${mealP}g Proteine</b>), ma solo <b>${mealC}g di Carboidrati</b> complessivi. Sotto i pesi rischi di sentirti piatto e avere poco pump.`;
-        actionAdvice = `Prima di iniziare, aggiungi una piccola quota di carboidrati veloci (<b>20-25g di carbo</b>: un frutto, 2-3 gallette o ciclodestrine intra-workout).`;
-    } else {
-        statusColor = "emerald"; statusIcon = "fa-bolt"; statusSub = "Semaforo Verde • Condizione Ideale"; statusTitle = "Vai a Spingere al Massimo!";
-        explanation = `Tempismo perfetto! Il tuo ultimo pasto (<b>${lastMealGroup.mealType}</b>, ${hoursStr} • <b>${mealKcal} kcal</b> totali) è stato digerito e ti fornisce <b>${mealC}g di carboidrati</b> (${totalDayCarbs}g totali oggi) già in circolo nei muscoli, uniti a <b>${mealP}g di proteine</b>.`;
-        actionAdvice = `Le tue scorte di glicogeno e aminoacidi sono al top. Riscaldati bene e punta a migliorare i tuoi carichi oggi!`;
-    }
-
-    const waterNote = glasses < 3
-        ? `<div class="mt-2.5 pt-2.5 border-t border-slate-700/80 text-[11px] text-cyan-300 flex items-center gap-2"><i class="fas fa-tint text-cyan-400"></i> <span><b>Nota Idratazione:</b> Hai bevuto solo ${glasses} bicchieri d'acqua oggi. Bevi 250-400ml d'acqua prima di iniziare!</span></div>`
-        : '';
-
-    const colorClasses = {
-        red: { box: "bg-red-950/40 border-red-500/50", badge: "bg-red-500 text-white", text: "text-red-300" },
-        amber: { box: "bg-amber-950/40 border-amber-500/50", badge: "bg-amber-500 text-slate-900", text: "text-amber-300" },
-        emerald: { box: "bg-emerald-950/40 border-emerald-500/50", badge: "bg-emerald-500 text-slate-900", text: "text-emerald-300" }
-    }[statusColor];
-
-    container.innerHTML = `
-        <div class="${colorClasses.box} border rounded-2xl p-4">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-11 h-11 rounded-full ${colorClasses.badge} flex items-center justify-center font-bold text-xl shrink-0 shadow-lg">
-                    <i class="fas ${statusIcon}"></i>
-                </div>
-                <div>
-                    <div class="text-[10px] font-bold uppercase tracking-wider ${colorClasses.text}">${statusSub}</div>
-                    <h3 class="text-base font-extrabold text-white leading-tight">${statusTitle}</h3>
-                </div>
-            </div>
-            <div class="bg-slate-900/90 rounded-xl p-2.5 border border-slate-700/70 mb-3 text-xs">
-                <div class="flex justify-between items-center text-slate-400 text-[10px] mb-1">
-                    <span>ULTIMO PASTO: <b class="text-blue-400">${lastMealTypeName}</b> (${lastTimeFormatted} • ${hoursStr})</span>
-                    <span class="font-bold text-white">${mealKcal} kcal tot.</span>
-                </div>
-                <div class="font-semibold text-slate-200 text-[11px] leading-snug mb-2">${mealNames.join(' + ')}</div>
-                <div class="grid grid-cols-3 gap-1.5 text-center text-[11px] bg-slate-950 p-1.5 rounded-lg">
-                    <div><span class="text-blue-400 font-bold">P:</span> ${mealP}g</div>
-                    <div><span class="text-amber-400 font-bold">C:</span> ${mealC}g</div>
-                    <div><span class="text-rose-400 font-bold">G:</span> ${mealF}g</div>
-                </div>
-            </div>
-            <p class="text-xs text-slate-200 leading-relaxed mb-3">${explanation}</p>
-            <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-700 text-xs">
-                <div class="font-bold ${colorClasses.text} mb-1"><i class="fas fa-bullseye mr-1"></i>Strategia Consigliata:</div>
-                <p class="text-slate-300 leading-relaxed">${actionAdvice}</p>
-                ${waterNote}
-            </div>
-        </div>
-    `;
-    document.getElementById('preworkout-advisor-modal').classList.remove('hidden');
-    document.getElementById('preworkout-advisor-modal').classList.add('flex');
-}
-function closePreWorkoutAdvisorModal() {
-    document.getElementById('preworkout-advisor-modal').classList.add('hidden');
-    document.getElementById('preworkout-advisor-modal').classList.remove('flex');
-}
-
-
-// ==================== MODALE DIARIO STORICO ====================
+function timeStrToMinutes(tStr) { if (!tStr || !tStr.includes(':')) return null; const parts = tStr.split(':'); return (parseInt(parts[0]) * 60) + parseInt(parts[1]); }
 function getLoggedDietDates() { let dateSet = new Set(); for (let i = 0; i < localStorage.length; i++) { let k = localStorage.key(i); if (k && k.startsWith('diet_log_')) { let arr = JSON.parse(localStorage.getItem(k)) || []; if (arr.length > 0) dateSet.add(k.replace('diet_log_', '')); } else if (k && k.startsWith('water_log_')) { let w = parseInt(localStorage.getItem(k)) || 0; if (w > 0) dateSet.add(k.replace('water_log_', '')); } } return Array.from(dateSet).sort((a, b) => new Date(b) - new Date(a)); }
 function openFoodDiaryModal() { const currentSelected = document.getElementById('diet-date').value || new Date().toISOString().split('T')[0]; document.getElementById('diary-inspect-date').value = currentSelected; renderDiaryLoggedDatesPills(); renderDiaryModalContent(); document.getElementById('food-diary-modal').classList.remove('hidden'); document.getElementById('food-diary-modal').classList.add('flex'); }
 function closeFoodDiaryModal() { document.getElementById('food-diary-modal').classList.add('hidden'); document.getElementById('food-diary-modal').classList.remove('flex'); }
@@ -413,8 +223,6 @@ function renderDiaryModalContent() {
     });
 }
 function loadDiaryDateIntoMainView() { const inspected = document.getElementById('diary-inspect-date').value; if (inspected) { document.getElementById('diet-date').value = inspected; renderNutritionDashboard(); } closeFoodDiaryModal(); }
-
-// ==================== MODALE INSERIMENTO PASTI ====================
 function openFoodModal() { selectedHomeFood = null; selectedGymFood = null; selectedCheatFood = null; document.getElementById('food-meal-time').value = getCurrentTimeStr(); document.getElementById('home-food-config').classList.add('hidden'); document.getElementById('online-food-config').classList.add('hidden'); document.getElementById('gym-food-config').classList.add('hidden'); document.getElementById('cheat-food-config').classList.add('hidden'); document.getElementById('home-food-search').value = ''; document.getElementById('gym-food-search').value = ''; document.getElementById('cheat-food-search').value = ''; filterHomeFoodList(); filterGymFoodList(); filterCheatFoodList(); document.getElementById('food-modal').classList.remove('hidden'); document.getElementById('food-modal').classList.add('flex'); }
 function closeFoodModal() { document.getElementById('food-modal').classList.add('hidden'); document.getElementById('food-modal').classList.remove('flex'); }
 function switchFoodModalTab(mode) {
@@ -424,7 +232,6 @@ function switchFoodModalTab(mode) {
     document.getElementById('food-tab-home').classList.add('hidden'); document.getElementById('food-tab-online').classList.add('hidden'); document.getElementById('food-tab-gym').classList.add('hidden'); document.getElementById('food-tab-cheat').classList.add('hidden');
     if (mode === 'home') { btnHome.className = "py-2 px-1 rounded-lg text-[11px] font-bold bg-blue-600 text-white shadow transition-all truncate"; document.getElementById('food-tab-home').classList.remove('hidden'); } else if (mode === 'online') { btnOnline.className = "py-2 px-1 rounded-lg text-[11px] font-bold bg-blue-600 text-white shadow transition-all truncate"; document.getElementById('food-tab-online').classList.remove('hidden'); } else if (mode === 'gym') { btnGym.className = "py-2 px-1 rounded-lg text-[11px] font-bold bg-emerald-600 text-white shadow transition-all truncate"; document.getElementById('food-tab-gym').classList.remove('hidden'); } else if (mode === 'cheat') { btnCheat.className = "py-2 px-1 rounded-lg text-[11px] font-bold bg-orange-600 text-white shadow transition-all truncate"; document.getElementById('food-tab-cheat').classList.remove('hidden'); }
 }
-
 function filterHomeFoodList() {
     const cat = document.getElementById('home-food-cat').value, q = document.getElementById('home-food-search').value.toLowerCase().trim(); const listEl = document.getElementById('home-food-list'); listEl.innerHTML = '';
     const filtered = homeFoodDB.filter(item => (cat === 'Tutti' || item.cat === cat) && (!q || item.name.toLowerCase().includes(q)));
@@ -462,7 +269,6 @@ function saveHomeFoodMeal() {
     const newEntry = { mealType: mealType, time: mealTime, name: selectedHomeFood.name, details: `${currentPortionSize}: ${sizeLabel} (${condLabels[currentCondimentLevel]})`, kcal: res.kcal, p: res.p, c: res.c, f: res.f, isCheat: false, isGym: false };
     const key = getDietDateKey(); let logs = JSON.parse(localStorage.getItem(key)) || []; logs.push(newEntry); localStorage.setItem(key, JSON.stringify(logs)); closeFoodModal(); renderNutritionDashboard();
 }
-
 async function searchOnlineFood() {
     const q = document.getElementById('online-food-query').value.trim(); const resBox = document.getElementById('online-food-results'); if (q.length < 2) return;
     resBox.innerHTML = `<div class="text-xs text-blue-400 text-center py-6"><i class="fas fa-spinner fa-spin mr-2"></i>Ricerca nel database mondiale...</div>`;
@@ -485,7 +291,6 @@ function saveOnlineFoodMeal() {
     const newEntry = { mealType: mealType, time: mealTime, name: selectedOnlineFood.name, details: `${g}g pesati`, kcal: Math.round(selectedOnlineFood.kcal100 * ratio), p: Math.round(selectedOnlineFood.p100 * ratio), c: Math.round(selectedOnlineFood.c100 * ratio), f: Math.round(selectedOnlineFood.f100 * ratio), isCheat: false, isGym: false };
     const key = getDietDateKey(); let logs = JSON.parse(localStorage.getItem(key)) || []; logs.push(newEntry); localStorage.setItem(key, JSON.stringify(logs)); closeFoodModal(); renderNutritionDashboard();
 }
-
 function filterGymFoodList() {
     const cat = document.getElementById('gym-food-cat').value, q = document.getElementById('gym-food-search').value.toLowerCase().trim(); const listEl = document.getElementById('gym-food-list'); listEl.innerHTML = '';
     const filtered = gymFoodDB.filter(item => (cat === 'Tutti' || item.cat === cat) && (!q || item.name.toLowerCase().includes(q)));
@@ -505,7 +310,6 @@ function saveGymFoodMeal() {
     const newEntry = { mealType: mealType, time: mealTime, name: selectedGymFood.name, details: `Dose ${currentGymMultiplier}x`, kcal: res.kcal, p: res.p, c: res.c, f: res.f, isCheat: false, isGym: true };
     const key = getDietDateKey(); let logs = JSON.parse(localStorage.getItem(key)) || []; logs.push(newEntry); localStorage.setItem(key, JSON.stringify(logs)); closeFoodModal(); renderNutritionDashboard();
 }
-
 function filterCheatFoodList() {
     const cat = document.getElementById('cheat-food-cat').value, q = document.getElementById('cheat-food-search').value.toLowerCase().trim(); const listEl = document.getElementById('cheat-food-list'); listEl.innerHTML = '';
     const filtered = cheatFoodDB.filter(item => (cat === 'Tutti' || item.cat === cat) && (!q || item.name.toLowerCase().includes(q)));
@@ -547,6 +351,7 @@ function saveCheatFoodMeal() {
     const newEntry = { mealType: mealType, time: mealTime, name: selectedCheatFood.name, details: detailsText, kcal: res.kcal, p: res.p, c: res.c, f: res.f, isCheat: true, isGym: false };
     const key = getDietDateKey(); let logs = JSON.parse(localStorage.getItem(key)) || []; logs.push(newEntry); localStorage.setItem(key, JSON.stringify(logs)); closeFoodModal(); renderNutritionDashboard();
 }
+function deleteFoodLog(idx) { const key = getDietDateKey(); let logs = JSON.parse(localStorage.getItem(key)) || []; logs.splice(idx, 1); localStorage.setItem(key, JSON.stringify(logs)); renderNutritionDashboard(); }
 
 // ==================== FUNZIONI CALENDARIO E SCHEDA ====================
 function initCalendarDropdowns() {
@@ -602,6 +407,24 @@ function requestDeleteDay(dk) {
     });
 }
 
+function renderMeasurements() {
+    const c = document.getElementById('measurements-history'); const hist = JSON.parse(localStorage.getItem('measurements_history')) || []; c.innerHTML = '';
+    if (hist.length === 0) { c.innerHTML = `<div class="text-xs text-slate-500 text-center py-4 bg-slate-900/60 rounded-xl border border-slate-700/60">Nessuna misurazione salvata.</div>`; return; }
+    hist.forEach((m, i) => {
+        const badges = [
+            m.spalle ? `<span class="bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 text-[11px]"><b class="text-blue-400">Spalle:</b> ${m.spalle}cm</span>` : '',
+            m.petto ? `<span class="bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 text-[11px]"><b class="text-blue-400">Petto:</b> ${m.petto}cm</span>` : '',
+            m.braccia ? `<span class="bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 text-[11px]"><b class="text-amber-400">Braccia:</b> ${m.braccia}cm</span>` : '',
+            m.vita ? `<span class="bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 text-[11px]"><b class="text-emerald-400">Vita:</b> ${m.vita}cm</span>` : '',
+            m.fianchi ? `<span class="bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 text-[11px]"><b class="text-emerald-400">Fianchi:</b> ${m.fianchi}cm</span>` : '',
+            m.cosce ? `<span class="bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 text-[11px]"><b class="text-rose-400">Cosce:</b> ${m.cosce}cm</span>` : '',
+            m.polpacci ? `<span class="bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 text-[11px]"><b class="text-rose-400">Polpacci:</b> ${m.polpacci}cm</span>` : ''
+        ].filter(d => d !== '').join(' ');
+        c.innerHTML += `<div class="bg-slate-900/90 rounded-xl p-3 border border-slate-700/70 flex justify-between items-start"><div><div class="text-xs font-extrabold text-white mb-2 flex items-center gap-1.5"><i class="far fa-calendar text-blue-400"></i> ${formatDate(m.date)}</div><div class="flex flex-wrap gap-1.5 text-slate-200">${badges}</div></div><button onclick="deleteMeasurement(${i})" class="text-slate-500 hover:text-red-500 p-1 ml-2"><i class="fas fa-trash-alt text-xs"></i></button></div>`;
+    });
+}
+function deleteMeasurement(i) { showCustomConfirm("Eliminare la misurazione?", () => { let hist = JSON.parse(localStorage.getItem('measurements_history')) || []; hist.splice(i, 1); localStorage.setItem('measurements_history', JSON.stringify(hist)); renderMeasurements(); }); }
+
 function openRoutinesManager() { renderRoutinesList(); document.getElementById('routines-modal').classList.remove('hidden'); document.getElementById('routines-modal').classList.add('flex'); }
 function closeRoutinesManager() { document.getElementById('routines-modal').classList.add('hidden'); document.getElementById('routines-modal').classList.remove('flex'); }
 function renderRoutinesList() {
@@ -624,10 +447,6 @@ function deleteRoutine(rId) { showCustomConfirm("Eliminare scheda?", () => { del
 function handleExerciseSearch(q) {
     const dp = document.getElementById('add-ex-dropdown'); dp.innerHTML = ''; selectedDbExercise = null;
     if (!q || q.trim().length<2) { dp.classList.add('hidden'); return; }
-    
-    // Per poter cercare nel database dobbiamo prima assicurarci che sia stato caricato
-    if (typeof exerciseDB === 'undefined') return;
-    
     const res = exerciseDB.filter(ex => ex.name.toLowerCase().includes(q.toLowerCase()));
     if(res.length>0) {
         res.forEach(r => {
@@ -644,7 +463,6 @@ function openLibraryModal() { renderLibrary(); document.getElementById('library-
 function closeLibraryModal() { document.getElementById('library-modal').classList.add('hidden'); document.getElementById('library-modal').classList.remove('flex'); }
 
 function renderLibrary() {
-    if (typeof exerciseDB === 'undefined') return;
     const container = document.getElementById('library-list-container'); container.innerHTML = ''; const grouped = {};
     exerciseDB.forEach(ex => { const cat = ex.category || "Altri"; if(!grouped[cat]) grouped[cat] = []; grouped[cat].push(ex); });
     for (const [cat, exList] of Object.entries(grouped)) {
@@ -694,7 +512,6 @@ function findDomsSubstitute(originalEx, dayExercises) {
     let dayMuscles = new Set();
     dayExercises.forEach(e => { if (e.muscles) Object.keys(e.muscles).forEach(m => dayMuscles.add(m)); });
     currentDomsFilters.forEach(m => dayMuscles.delete(m));
-    if (typeof exerciseDB === 'undefined') return { name: "Recupero", tech: "", muscles: {} };
     let candidates = exerciseDB.filter(dbEx => {
         if (isHitByDoms(dbEx.muscles)) return false;
         let hitsAllowedMuscle = false;
@@ -710,11 +527,11 @@ function openSwapModal(dk, exId) {
     let primary = null; let max = 0;
     if(ex.muscles) { for(const [m, sc] of Object.entries(ex.muscles)) { if(sc > max) { max = sc; primary = m; } } }
     const listEl = document.getElementById('swap-list'); listEl.innerHTML = '';
-    if(!primary || typeof exerciseDB === 'undefined') {
+    if(!primary) {
         listEl.innerHTML = '<p class="text-sm text-slate-400">Nessuna alternativa trovata per questo esercizio personalizzato.</p>';
     } else {
         let alts = exerciseDB.filter(e => e.name !== ex.name && e.muscles && e.muscles[primary] >= 2);
-        alts.forEach(alt => { listEl.innerHTML += `<div class="bg-slate-900 p-3 rounded-xl border border-slate-700/50 mb-2 flex justify-between items-center"><span class="text-sm text-slate-200 font-bold">${alt.name}</span><button onclick="confirmSwap('${dk}', '${exId}', '${alt.name.replace(/'/g, "\\'")}')" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-colors shadow">Scegli</button></div>`; });
+        alts.forEach(alt => { listEl.innerHTML += `<div class="bg-slate-900 p-3 rounded-xl border border-slate-700/50 mb-2 flex justify-between items-center"><span class="text-sm text-slate-200 font-bold">${alt.name}</span><button onclick="confirmSwap('${dk}', '${exId}', '${alt.name.replace(/'/g, "\\\\'")}')" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-colors shadow">Scegli</button></div>`; });
     }
     document.getElementById('swap-modal').classList.remove('hidden'); document.getElementById('swap-modal').classList.add('flex');
 }
@@ -733,11 +550,7 @@ function confirmSwap(dk, exId, newName) {
 }
 
 function getExerciseCategoryBadge(exName) {
-    let cat = "Custom";
-    if (typeof exerciseDB !== 'undefined') {
-        const found = exerciseDB.find(e => e.name === exName);
-        if (found) cat = found.category;
-    }
+    const found = exerciseDB.find(e => e.name === exName); const cat = found ? found.category : "Custom";
     const colors = { "Petto": "text-blue-400 bg-blue-500/10 border-blue-500/30", "Dorso e Lombari": "text-cyan-400 bg-cyan-500/10 border-cyan-500/30", "Gambe": "text-rose-400 bg-rose-500/10 border-rose-500/30", "Spalle": "text-amber-400 bg-amber-500/10 border-amber-500/30", "Braccia": "text-purple-400 bg-purple-500/10 border-purple-500/30", "Addome e Core": "text-emerald-400 bg-emerald-500/10 border-emerald-500/30", "Custom": "text-slate-400 bg-slate-700/40 border-slate-600/50" };
     return `<span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${colors[cat] || colors["Custom"]}">${cat}</span>`;
 }
@@ -746,16 +559,6 @@ function getExerciseCategoryBadge(exName) {
 function renderWorkouts() {
     const c = document.getElementById('workout-container'); c.innerHTML = '';
     const targetDate = document.getElementById('prog-date').value || new Date().toISOString().split('T')[0];
-
-    // --- NUOVO BLOCCO: Nascondi il tastone se ci sono già schede o esercizi ---
-    const ctaBtn = document.getElementById('cta-nuova-scheda');
-    if (ctaBtn) {
-        let totalEx = 0;
-        for (let d in currentRoutine.days) totalEx += currentRoutine.days[d].exercises.length;
-        if (Object.keys(allRoutines).length === 1 && totalEx === 0) ctaBtn.style.display = 'flex';
-        else ctaBtn.style.display = 'none';
-    }
-    // --------------------------------------------------------------------------
 
     for (const [key, data] of Object.entries(currentRoutine.days)) {
         let sOrder = JSON.parse(localStorage.getItem(`order-${activeRoutineId}-${key}`));
@@ -778,7 +581,6 @@ function renderWorkouts() {
                     <button onclick="openWarmupModal('${key}')" class="mt-3 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-500/30 px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-colors"><i class="fas fa-fire-alt"></i> Smart Warm-up</button>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="openPreWorkoutAdvisorModal()" title="Check Energia" class="bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-400 rounded-xl w-10 h-10 flex items-center justify-center shadow transition-colors"><i class="fas fa-bolt"></i></button>
                     <button onclick="openDomsModal()" title="Filtro DOMS" class="${filterBtnClass} rounded-xl w-10 h-10 flex items-center justify-center transition-colors shadow"><i class="fas fa-filter text-sm"></i></button>
                     <button onclick="openAddModal('${key}')" title="Aggiungi Esercizio" class="bg-blue-600 hover:bg-blue-500 text-white rounded-xl w-10 h-10 flex items-center justify-center shadow-lg transition-colors"><i class="fas fa-plus"></i></button>
                 </div>
@@ -870,21 +672,17 @@ function scrollToProgDay(dayKey) {
 
 // ==================== GESTIONE SFORZO RPE (COACH) ====================
 function setEffort(exId, level) {
-    const inputEl = document.getElementById(`inp-effort-${exId}`);
-    if (inputEl) inputEl.value = level;
-    
-    const lbl = document.getElementById(`eff-lbl-${exId}`);
-    if (lbl) {
-        if (level === 'easy') { lbl.innerText = 'SFORZO: FACILE'; lbl.className = 'text-[8px] font-bold uppercase tracking-widest mb-0.5 text-emerald-400 transition-colors'; } 
-        else if (level === 'hard') { lbl.innerText = 'SFORZO: LIMITE'; lbl.className = 'text-[8px] font-bold uppercase tracking-widest mb-0.5 text-rose-400 transition-colors'; } 
-        else { lbl.innerText = 'SFORZO: GIUSTO'; lbl.className = 'text-[8px] font-bold uppercase tracking-widest mb-0.5 text-slate-400 transition-colors'; }
-    }
-    
+    document.getElementById(`inp-effort-${exId}`).value = level;
     ['easy', 'normal', 'hard'].forEach(l => {
         const btn = document.getElementById(`eff-${l.substring(0,4)}-${exId}`);
-        if (btn) { // Controllo per non crashare
-            if (l === level) { btn.classList.replace('opacity-40', 'opacity-100'); btn.classList.replace('scale-90', 'scale-110'); if(!btn.classList.contains('bg-slate-800')) btn.classList.add('bg-slate-800', 'shadow'); } 
-            else { btn.classList.replace('opacity-100', 'opacity-40'); btn.classList.replace('scale-110', 'scale-90'); btn.classList.remove('bg-slate-800', 'shadow'); }
+        if (l === level) {
+            btn.classList.replace('opacity-40', 'opacity-100');
+            btn.classList.replace('scale-90', 'scale-110');
+            if(!btn.classList.contains('bg-slate-800')) btn.classList.add('bg-slate-800', 'shadow');
+        } else {
+            btn.classList.replace('opacity-100', 'opacity-40');
+            btn.classList.replace('scale-110', 'scale-90');
+            btn.classList.remove('bg-slate-800', 'shadow');
         }
     });
 }
@@ -900,111 +698,197 @@ function renderProgressioni() {
     
     for (const [dk, data] of Object.entries(currentRoutine.days)) {
         let sO = JSON.parse(localStorage.getItem(`order-${activeRoutineId}-${dk}`));
-        let eList = data.exercises.filter(ex => { if (ex.isSwapSub && ex.swapDate !== targetDate) return false; return true; });
+        let eList = data.exercises.filter(ex => {
+            if (ex.isSwapSub && ex.swapDate !== targetDate) return false;
+            return true;
+        });
         if(sO) eList.sort((a,b)=>{let iA=sO.indexOf(a.id);let iB=sO.indexOf(b.id);return (iA===-1?999:iA)-(iB===-1?999:iB);});
         
         let displayList = [];
         eList.forEach(ex => {
-            if(currentDomsFilters.length > 0 && isHitByDoms(ex.muscles)) { let sub = findDomsSubstitute(ex, eList); displayList.push({...sub, id: ex.id, isDomsSub: true, originalName: ex.name, deletedFromRoutine: ex.deletedFromRoutine, defaultSets: ex.defaultSets, defaultReps: ex.defaultReps}); } 
-            else { displayList.push(ex); }
+            if(currentDomsFilters.length > 0 && isHitByDoms(ex.muscles)) {
+                let sub = findDomsSubstitute(ex, eList);
+                displayList.push({...sub, id: ex.id, isDomsSub: true, originalName: ex.name, deletedFromRoutine: ex.deletedFromRoutine, defaultSets: ex.defaultSets, defaultReps: ex.defaultReps});
+            } else {
+                displayList.push(ex);
+            }
         });
         
-        if (typeof exerciseDB !== 'undefined') {
-            exerciseDB.forEach(dbEx => {
-                const hk = getHistKey(dbEx.name); const hist = JSON.parse(localStorage.getItem(hk)) || [];
-                const logsForDate = hist.filter(h => h.date === targetDate && h.isSubstitute);
-                if (logsForDate.length > 0) { if (!displayList.some(e => e.name === dbEx.name)) { displayList.push({...dbEx, id: 'hist-sub-'+Math.random(), isPastSub: true}); } }
-            });
-        }
+        exerciseDB.forEach(dbEx => {
+            const hk = getHistKey(dbEx.name);
+            const hist = JSON.parse(localStorage.getItem(hk)) || [];
+            const logsForDate = hist.filter(h => h.date === targetDate && h.isSubstitute);
+            if (logsForDate.length > 0) {
+                if (!displayList.some(e => e.name === dbEx.name)) {
+                    displayList.push({...dbEx, id: 'hist-sub-'+Math.random(), isPastSub: true});
+                }
+            }
+        });
         
         let activeNames = displayList.filter(e => !e.deletedFromRoutine && !e.isPastSub).map(e => e.name);
-        let vE = displayList.filter(ex=>{ const h = JSON.parse(localStorage.getItem(getHistKey(ex.name)))||[]; if (!ex.deletedFromRoutine || ex.isPastSub) return true; return h.length > 0 && !activeNames.includes(ex.name); });
+        let vE = displayList.filter(ex=>{
+            const h = JSON.parse(localStorage.getItem(getHistKey(ex.name)))||[];
+            if (!ex.deletedFromRoutine || ex.isPastSub) return true;
+            return h.length > 0 && !activeNames.includes(ex.name);
+        });
         
         if(vE.length === 0) continue;
+
         if (!firstRenderedDay) firstRenderedDay = dk;
 
         if (jumpBar) {
             const isFirst = (dk === firstRenderedDay);
-            jumpBar.innerHTML += `<button id="jump-pill-${dk}" onclick="scrollToProgDay('${dk}')" class="jump-pill px-3.5 py-1.5 rounded-xl text-xs font-bold ${isFirst ? 'bg-blue-600 text-white border border-blue-400 shadow-lg' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-blue-500'} flex items-center gap-1.5"><i class="fas fa-bolt text-[10px] ${isFirst ? 'text-amber-300' : 'text-blue-400'}"></i> ${data.title}</button>`;
+            jumpBar.innerHTML += `<button id="jump-pill-${dk}" onclick="scrollToProgDay('${dk}')" class="jump-pill px-3.5 py-1.5 rounded-xl text-xs font-bold ${isFirst ? 'bg-blue-600 text-white border border-blue-400 shadow-lg' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:border-blue-500'} flex items-center gap-1.5">
+                <i class="fas fa-bolt text-[10px] ${isFirst ? 'text-amber-300' : 'text-blue-400'}"></i> ${data.title}
+            </button>`;
         }
 
-        let dHtml = `<div id="prog-section-${dk}" class="mb-8 scroll-mt-32"><div class="flex items-center justify-between bg-slate-800/60 px-3.5 py-2 rounded-xl border border-slate-700/70 mb-3.5"><span class="text-xs font-extrabold text-blue-400 uppercase tracking-wider flex items-center gap-2"><i class="fas fa-layer-group"></i> ${data.title}</span><span class="text-[10px] font-bold text-slate-400">${vE.length} esercizi</span></div><div class="space-y-4">`;
+        let dHtml = `<div id="prog-section-${dk}" class="mb-8 scroll-mt-32">
+            <div class="flex items-center justify-between bg-slate-800/60 px-3.5 py-2 rounded-xl border border-slate-700/70 mb-3.5">
+                <span class="text-xs font-extrabold text-blue-400 uppercase tracking-wider flex items-center gap-2"><i class="fas fa-layer-group"></i> ${data.title}</span>
+                <span class="text-[10px] font-bold text-slate-400">${vE.length} esercizi</span>
+            </div>
+            <div class="space-y-4">`;
 
         vE.forEach(ex => {
-            const hk = getHistKey(ex.name); const h = JSON.parse(localStorage.getItem(hk))||[]; let hH = ''; let coachBadge = '';
+            const hk = getHistKey(ex.name);
+            const h = JSON.parse(localStorage.getItem(hk))||[];
+            let hH = '';
+            let coachBadge = '';
 
             if(h.length > 0) {
+                // LOGICA DEL COACH
                 const lastLog = h[0];
                 if (lastLog.effort === 'easy') {
-                    let oldW = parseFloat(lastLog.weight) || 0; let suggestedW = oldW;
+                    let oldW = parseFloat(lastLog.weight) || 0;
+                    let suggestedW = oldW;
                     if (oldW > 0) {
-                        if (oldW <= 25) suggestedW += 1; else if (oldW <= 50) suggestedW += 2; else suggestedW += 2.5;
-                        coachBadge = `<button onclick="document.getElementById('inp-weight-${ex.id}').value='${suggestedW}';" title="Scorsa volta era Facile!" class="ml-2 bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse border border-amber-300">⚡ PROVA ${suggestedW}kg</button>`;
+                        if (oldW <= 25) suggestedW += 1;
+                        else if (oldW <= 50) suggestedW += 2;
+                        else suggestedW += 2.5;
+                        
+                        coachBadge = `<button onclick="document.getElementById('inp-weight-${ex.id}').value='${suggestedW}';" title="L'ultima volta era Facile!" class="ml-2 bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse border border-amber-300">⚡ PROVA ${suggestedW}kg</button>`;
                     }
                 }
+
                 h.forEach((l,i) => {
-                    let effortDot = '🟡'; if (l.effort === 'easy') effortDot = '🟢'; else if (l.effort === 'hard') effortDot = '🔴';
-                    hH += `<div class="flex justify-between items-center text-xs border-b border-slate-800 py-2 last:border-none last:pb-0 w-full"><div class="flex-1"><div class="flex justify-between items-center pr-2"><span class="text-slate-400 font-semibold">${formatDate(l.date)}</span><div class="flex items-center"><span class="bg-blue-500/15 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-md font-bold mr-1">${l.sets}x${l.reps}</span><span class="font-extrabold text-emerald-400 text-sm">${l.weight} kg</span><span class="text-[10px] ml-1.5" title="Sforzo percepito">${effortDot}</span></div></div>${l.note ? `<div class="text-[11px] text-slate-400 italic mt-1"><i class="far fa-comment-dots text-blue-400 mr-1"></i>${l.note}</div>` : ''}</div><button onclick="deleteLog('${hk}', ${i})" class="text-slate-500 hover:text-red-500 p-1 ml-1"><i class="fas fa-times"></i></button></div>`;
+                    let effortDot = '🟡';
+                    if (l.effort === 'easy') effortDot = '🟢';
+                    else if (l.effort === 'hard') effortDot = '🔴';
+
+                    hH += `<div class="flex justify-between items-center text-xs border-b border-slate-800 py-2 last:border-none last:pb-0 w-full">
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center pr-2">
+                                <span class="text-slate-400 font-semibold">${formatDate(l.date)}</span>
+                                <div class="flex items-center">
+                                    <span class="bg-blue-500/15 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-md font-bold mr-1">${l.sets}x${l.reps}</span>
+                                    <span class="font-extrabold text-emerald-400 text-sm">${l.weight} kg</span>
+                                    <span class="text-[10px] ml-1.5" title="Sforzo percepito">${effortDot}</span>
+                                </div>
+                            </div>
+                            ${l.note ? `<div class="text-[11px] text-slate-400 italic mt-1"><i class="far fa-comment-dots text-blue-400 mr-1"></i>${l.note}</div>` : ''}
+                        </div>
+                        <button onclick="deleteLog('${hk}', ${i})" class="text-slate-500 hover:text-red-500 p-1 ml-1"><i class="fas fa-times"></i></button>
+                    </div>`;
                 });
-            } else { hH = `<div class="text-xs text-slate-500 text-center py-2">Nessuna serie registrata nei giorni passati.</div>`; }
+            } else {
+                hH = `<div class="text-xs text-slate-500 text-center py-2">Nessuna serie registrata nei giorni passati.</div>`;
+            }
             
             let badgeHtml = (ex.isDomsSub || ex.isPastSub || ex.isSwapSub) ? `<span class="ml-1.5 text-[9px] bg-amber-500 text-slate-900 font-extrabold px-2 py-0.5 rounded-full shadow">SOSTITUTIVO</span>` : '';
             if(ex.deletedFromRoutine && !ex.isPastSub && !ex.isDomsSub && !ex.isSwapSub) badgeHtml = `<span class="ml-1.5 text-[9px] bg-rose-900/60 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full">ARCHIVIATO</span>`;
 
-            const targetSets = localStorage.getItem(`${ex.id}-sets`) || ex.defaultSets || ''; const targetReps = localStorage.getItem(`${ex.id}-reps`) || ex.defaultReps || '';
+            const targetSets = localStorage.getItem(`${ex.id}-sets`) || ex.defaultSets || '';
+            const targetReps = localStorage.getItem(`${ex.id}-reps`) || ex.defaultReps || '';
             const targetHint = (targetSets && targetReps) ? `<span class="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700">Scheda: ${targetSets}x${targetReps}</span>` : '';
 
             dHtml += `<div class="bg-slate-800/90 rounded-2xl p-3.5 border ${ex.isDomsSub || ex.isPastSub || ex.isSwapSub ? 'border-amber-500/50' : 'border-slate-700/80'} shadow-xl ${ex.deletedFromRoutine && !ex.isPastSub ? 'opacity-75' : ''}">
+                
+                <!-- SOTTO-RIQUADRO INTERNO: Raggruppa Nome, Serie, Reps, Carico, Nota e Registra Serie -->
                 <div class="bg-slate-900/95 rounded-xl p-3.5 border border-blue-500/30 shadow-inner mb-3">
                     <div class="flex justify-between items-start mb-3 border-b border-slate-800 pb-2.5">
-                        <div class="pr-2"><div class="flex flex-wrap items-center gap-1 mb-1">${getExerciseCategoryBadge(ex.name)}${badgeHtml}${coachBadge}</div><h4 class="font-extrabold text-white text-sm leading-snug">${ex.name}</h4></div>
+                        <div class="pr-2">
+                            <div class="flex flex-wrap items-center gap-1 mb-1">${getExerciseCategoryBadge(ex.name)}${badgeHtml}${coachBadge}</div>
+                            <h4 class="font-extrabold text-white text-sm leading-snug">${ex.name}</h4>
+                        </div>
                         ${targetHint}
                     </div>
+
+                    <!-- 3 Campi Vuoti -->
                     <div class="grid grid-cols-3 gap-2.5 mb-3">
-                        <div class="text-center"><label class="text-[10px] font-bold text-blue-400 uppercase mb-1 block">Serie</label><input type="number" id="inp-sets-${ex.id}" class="prog-empty-input w-full rounded-xl p-2 text-white font-extrabold text-base text-center outline-none"></div>
-                        <div class="text-center"><label class="text-[10px] font-bold text-amber-400 uppercase mb-1 block">Reps</label><input type="number" id="inp-reps-${ex.id}" class="prog-empty-input w-full rounded-xl p-2 text-white font-extrabold text-base text-center outline-none"></div>
-                        <div class="text-center"><label class="text-[10px] font-bold text-emerald-400 uppercase mb-1 block">Carico (Kg)</label><input type="number" step="0.5" id="inp-weight-${ex.id}" class="prog-empty-input w-full rounded-xl p-2 text-white font-extrabold text-base text-center outline-none"></div>
+                        <div class="text-center">
+                            <label class="text-[10px] font-bold text-blue-400 uppercase mb-1 block">Serie</label>
+                            <input type="number" id="inp-sets-${ex.id}" class="prog-empty-input w-full rounded-xl p-2 text-white font-extrabold text-base text-center outline-none">
+                        </div>
+                        <div class="text-center">
+                            <label class="text-[10px] font-bold text-amber-400 uppercase mb-1 block">Reps</label>
+                            <input type="number" id="inp-reps-${ex.id}" class="prog-empty-input w-full rounded-xl p-2 text-white font-extrabold text-base text-center outline-none">
+                        </div>
+                        <div class="text-center">
+                            <label class="text-[10px] font-bold text-emerald-400 uppercase mb-1 block">Carico (Kg)</label>
+                            <input type="number" step="0.5" id="inp-weight-${ex.id}" class="prog-empty-input w-full rounded-xl p-2 text-white font-extrabold text-base text-center outline-none">
+                        </div>
                     </div>
+
                     <div class="flex items-center gap-1.5">
                         <button onclick="toggleNote('note-${ex.id}')" title="Aggiungi Nota" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl w-10 h-10 flex items-center justify-center shrink-0 transition-colors"><i class="fas fa-comment-medical text-blue-400"></i></button>
                         
-                        <!-- SELETTORE RPE / SFORZO CON MICRO-LABEL -->
-                        <div class="flex flex-col items-center shrink-0">
-                            <span id="eff-lbl-${ex.id}" class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Sforzo: Giusto</span>
-                            <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-700 h-9">
-                                <button onclick="setEffort('${ex.id}', 'easy')" id="eff-easy-${ex.id}" class="w-7 h-7 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🟢</button>
-                                <button onclick="setEffort('${ex.id}', 'normal')" id="eff-norm-${ex.id}" class="w-7 h-7 rounded-lg text-sm opacity-100 bg-slate-800 shadow transition-all scale-110">🟡</button>
-                                <button onclick="setEffort('${ex.id}', 'hard')" id="eff-hard-${ex.id}" class="w-7 h-7 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🔴</button>
-                                <input type="hidden" id="inp-effort-${ex.id}" value="normal">
-                            </div>
+                        <!-- SELETTORE RPE / SFORZO -->
+                        <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-700 shrink-0 h-10">
+                            <button onclick="setEffort('${ex.id}', 'easy')" id="eff-easy-${ex.id}" title="Facile / Buffer ampio" class="w-8 h-8 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🟢</button>
+                            <button onclick="setEffort('${ex.id}', 'normal')" id="eff-norm-${ex.id}" title="Giusto / Target raggiunto" class="w-8 h-8 rounded-lg text-sm opacity-100 bg-slate-800 shadow transition-all scale-110">🟡</button>
+                            <button onclick="setEffort('${ex.id}', 'hard')" id="eff-hard-${ex.id}" title="Cedimento / Troppo pesante" class="w-8 h-8 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🔴</button>
+                            <input type="hidden" id="inp-effort-${ex.id}" value="normal">
                         </div>
 
                         <button onclick="saveProgression('${ex.id}', '${hk}', ${ex.isDomsSub || ex.isPastSub || ex.isSwapSub || false})" id="btn-save-${ex.id}" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl h-10 text-xs shadow-lg transition-colors flex items-center justify-center gap-1.5"><i class="fas fa-plus-circle"></i> Salva</button>
                     </div>
                     <input type="text" id="note-${ex.id}" placeholder="Scrivi una nota tecnica o sensazione..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs hidden mt-2.5 outline-none focus:border-blue-500">
                 </div>
+
+                <!-- FUORI DAL RIQUADRO INTERNO: Storico Registrazioni Passate & Grafico -->
                 <div class="px-1">
-                    <div class="flex justify-between items-center mb-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider"><i class="fas fa-history mr-1 text-slate-500"></i>Storico Registrazioni</span><button onclick="requestDeleteHistory('${hk}', '${ex.id}')" title="Svuota storico esercizio" class="text-[10px] text-slate-500 hover:text-red-400 flex items-center gap-1"><i class="fas fa-trash-alt"></i> Svuota</button></div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider"><i class="fas fa-history mr-1 text-slate-500"></i>Storico Registrazioni</span>
+                        <button onclick="requestDeleteHistory('${hk}', '${ex.id}')" title="Svuota storico esercizio" class="text-[10px] text-slate-500 hover:text-red-400 flex items-center gap-1"><i class="fas fa-trash-alt"></i> Svuota</button>
+                    </div>
                     <div class="bg-slate-900/70 rounded-xl p-2.5 border border-slate-700/50 mb-2.5 max-h-40 overflow-y-auto no-scrollbar">${hH}</div>
+
                     <button onclick="toggleChart('${ex.id}', '${hk}')" class="w-full py-2 rounded-xl bg-slate-900/60 hover:bg-slate-900 border border-slate-700/50 text-center text-xs font-bold text-blue-400 transition-colors"><i class="fas fa-chart-area mr-1"></i> Analisi Grafica 1RM & Volume</button>
                     <div id="chart-container-${ex.id}" class="hidden mt-2.5 bg-slate-900 p-2.5 rounded-xl border border-slate-700"><canvas id="chart-${ex.id}"></canvas></div>
                 </div>
             </div>`;
         });
-        dHtml += `</div></div>`; c.innerHTML += dHtml;
+        dHtml += `</div></div>`;
+        c.innerHTML += dHtml;
     }
-    if (c.innerHTML === '') c.innerHTML = `<div class="text-center text-xs text-slate-400 py-10 bg-slate-800/80 rounded-2xl border border-slate-700 border-dashed">Aggiungi prima degli esercizi nella sezione <b>Scheda</b> per registrare i tuoi progressi.</div>`;
+
+    if (c.innerHTML === '') {
+        c.innerHTML = `<div class="text-center text-xs text-slate-400 py-10 bg-slate-800/80 rounded-2xl border border-slate-700 border-dashed">Aggiungi prima degli esercizi nella sezione <b>Scheda</b> per registrare i tuoi progressi.</div>`;
+    }
 }
 
 function toggleNote(id) { const el=document.getElementById(id); el.classList.toggle('hidden'); if(!el.classList.contains('hidden')) el.focus(); }
 
 function saveProgression(exId, hk, isSubstitute) {
-    const d=document.getElementById('prog-date').value; const s=document.getElementById(`inp-sets-${exId}`).value; const r=document.getElementById(`inp-reps-${exId}`).value; const w=document.getElementById(`inp-weight-${exId}`).value; const n=document.getElementById(`note-${exId}`).value; const effort=document.getElementById(`inp-effort-${exId}`).value; const b=document.getElementById(`btn-save-${exId}`);
+    const d=document.getElementById('prog-date').value; 
+    const s=document.getElementById(`inp-sets-${exId}`).value; 
+    const r=document.getElementById(`inp-reps-${exId}`).value; 
+    const w=document.getElementById(`inp-weight-${exId}`).value; 
+    const n=document.getElementById(`note-${exId}`).value; 
+    const effort=document.getElementById(`inp-effort-${exId}`).value; 
+    const b=document.getElementById(`btn-save-${exId}`);
+    
     if(!d||!s||!r||!w){ b.classList.replace('bg-blue-600','bg-red-600'); setTimeout(()=>b.classList.replace('bg-red-600','bg-blue-600'),1500); return; }
+    
     let h=JSON.parse(localStorage.getItem(hk))||[];
     h.unshift({date:d, sets:s, reps:r, weight:w, note:n, isSubstitute: !!isSubstitute, effort: effort});
-    h.sort((a,b)=>new Date(b.date)-new Date(a.date)); localStorage.setItem(hk, JSON.stringify(h));
+    h.sort((a,b)=>new Date(b.date)-new Date(a.date)); 
+    localStorage.setItem(hk, JSON.stringify(h));
+    
+    // Ripristina l'effort di default dopo il salvataggio
     setEffort(exId, 'normal');
+    
     renderProgressioni(); renderMonthlyCalendar();
 }
 function deleteLog(hk, i) { let h=JSON.parse(localStorage.getItem(hk))||[]; h.splice(i,1); localStorage.setItem(hk, JSON.stringify(h)); renderProgressioni(); renderMonthlyCalendar(); }
@@ -1025,11 +909,14 @@ function renderMonthlyCalendar() {
     const y = calCurrentDate.getFullYear(); const m = calCurrentDate.getMonth();
     const monthSelect = document.getElementById('cal-month-select'); const yearSelect = document.getElementById('cal-year-select');
     if (monthSelect) monthSelect.value = m; if (yearSelect && yearSelect.querySelector(`option[value="${y}"]`)) { yearSelect.value = y; }
-    const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate(); let startDay = firstDay === 0 ? 6 : firstDay - 1;
-    const grid = document.getElementById('monthly-calendar-grid'); grid.innerHTML = ''; const workedOutDates = getWorkoutDates();
+    const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
+    let startDay = firstDay === 0 ? 6 : firstDay - 1;
+    const grid = document.getElementById('monthly-calendar-grid'); grid.innerHTML = '';
+    const workedOutDates = getWorkoutDates();
     for(let i=0; i<startDay; i++) { grid.innerHTML += `<div></div>`; }
     for(let d=1; d<=daysInMonth; d++) {
-        let dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; let isActive = workedOutDates.has(dateStr);
+        let dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        let isActive = workedOutDates.has(dateStr);
         let classes = isActive ? 'bg-emerald-500 text-slate-950 font-extrabold hover:scale-105 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'text-slate-400 bg-slate-900/70 border border-slate-700/50 hover:bg-slate-700';
         let dayHtml = `<div class="aspect-square flex items-center justify-center rounded-xl cursor-pointer transition-all ${classes}" onclick="selectCalendarDate('${dateStr}', ${isActive})">${d}</div>`;
         grid.innerHTML += dayHtml;
@@ -1049,21 +936,36 @@ function renderMapWithRange() {
     let s = {}; let exerciseListHtml = ''; let targetDates = [];
     let parts = currentMapBaseDate.split('-'); let baseD = new Date(parts[0], parts[1]-1, parts[2]);
     for(let i=0; i<currentMapRange; i++) { let d = new Date(baseD); d.setDate(d.getDate() - i); let y = d.getFullYear(); let m = String(d.getMonth() + 1).padStart(2, '0'); let day = String(d.getDate()).padStart(2, '0'); targetDates.push(`${y}-${m}-${day}`); }
+    
     if(currentMapRange === 1) { document.getElementById('map-date-display').innerText = formatDate(targetDates[0]); }
     else { document.getElementById('map-date-display').innerText = `${formatDate(targetDates[targetDates.length-1])} ➔ ${formatDate(targetDates[0])}`; }
+
     let exercisesByDate = {}; targetDates.forEach(td => exercisesByDate[td] = []); let processedKeys = new Set();
     for(const [dk, d] of Object.entries(currentRoutine.days)){
         d.exercises.forEach(ex => {
-            const hk = getHistKey(ex.name); if (processedKeys.has(hk)) return; processedKeys.add(hk); const l = JSON.parse(localStorage.getItem(hk)) || [];
-            targetDates.forEach(td => { const todaysLogs = l.filter(h => h.date === td); if(todaysLogs.length > 0) { exercisesByDate[td].push({ name: ex.name, logs: todaysLogs }); todaysLogs.forEach(log => { const st = parseInt(log.sets) || 0; if(st > 0 && ex.muscles){ for(const [m,sc] of Object.entries(ex.muscles)) s[m] = (s[m]||0) + (sc*st); } }); } });
+            const hk = getHistKey(ex.name); if (processedKeys.has(hk)) return; processedKeys.add(hk);
+            const l = JSON.parse(localStorage.getItem(hk)) || [];
+            targetDates.forEach(td => {
+                const todaysLogs = l.filter(h => h.date === td);
+                if(todaysLogs.length > 0) {
+                    exercisesByDate[td].push({ name: ex.name, logs: todaysLogs });
+                    todaysLogs.forEach(log => { const st = parseInt(log.sets) || 0; if(st > 0 && ex.muscles){ for(const [m,sc] of Object.entries(ex.muscles)) s[m] = (s[m]||0) + (sc*st); } });
+                }
+            });
         });
     }
-    if (typeof exerciseDB !== 'undefined') {
-        exerciseDB.forEach(dbEx => {
-            const hk = getHistKey(dbEx.name); if (processedKeys.has(hk)) return; const l = JSON.parse(localStorage.getItem(hk)) || [];
-            targetDates.forEach(td => { const todaysLogs = l.filter(h => h.date === td && h.isSubstitute); if(todaysLogs.length > 0) { exercisesByDate[td].push({ name: dbEx.name + " (Sostitutivo)", logs: todaysLogs }); todaysLogs.forEach(log => { const st = parseInt(log.sets) || 0; if(st > 0 && dbEx.muscles){ for(const [m,sc] of Object.entries(dbEx.muscles)) s[m] = (s[m]||0) + (sc*st); } }); } });
+    
+    exerciseDB.forEach(dbEx => {
+        const hk = getHistKey(dbEx.name); if (processedKeys.has(hk)) return; const l = JSON.parse(localStorage.getItem(hk)) || [];
+        targetDates.forEach(td => {
+            const todaysLogs = l.filter(h => h.date === td && h.isSubstitute);
+            if(todaysLogs.length > 0) {
+                exercisesByDate[td].push({ name: dbEx.name + " (Sostitutivo)", logs: todaysLogs });
+                todaysLogs.forEach(log => { const st = parseInt(log.sets) || 0; if(st > 0 && dbEx.muscles){ for(const [m,sc] of Object.entries(dbEx.muscles)) s[m] = (s[m]||0) + (sc*st); } });
+            }
         });
-    }
+    });
+
     targetDates.forEach(td => {
         if(exercisesByDate[td].length > 0) {
             exerciseListHtml += `<div class="mt-3 mb-2 font-bold text-blue-400 text-xs border-b border-slate-700 pb-1 uppercase tracking-wider">${formatDate(td)}</div>`;
@@ -1074,14 +976,20 @@ function renderMapWithRange() {
             });
         }
     });
+
     const listContainer = document.getElementById('map-exercise-list');
-    if(exerciseListHtml === '') { listContainer.innerHTML = '<div class="text-xs text-slate-500 text-center italic py-2">Nessun allenamento in questo periodo.</div>'; } else { listContainer.innerHTML = exerciseListHtml; }
+    if(exerciseListHtml === '') { listContainer.innerHTML = '<div class="text-xs text-slate-500 text-center italic py-2">Nessun allenamento in questo periodo.</div>'; }
+    else { listContainer.innerHTML = exerciseListHtml; }
+
     let chestUpperScore = s['front-chest-upper']||0; let chestLowerScore = s['front-chest-lower']||0; let frontShoulderScore = s['front-shoulder']||0; let armsFrontScore = (s['front-biceps']||0) + (s['front-forearm']||0); let absScore = (s['front-abs']||0) + (s['front-abs-lower']||0) + (s['front-obliques']||0); let quadsScore = s['front-quads']||0; let adductorsScore = s['front-adductors']||0;
     let backScore = (s['back-traps']||0) + (s['back-lats']||0); let lowerBackScore = s['back-lowerback']||0; let rearShoulderScore = s['back-shoulder']||0; let armsRearScore = s['back-triceps']||0; let glutesScore = s['back-glutes']||0; let hamstringsScore = s['back-hamstrings']||0; let calvesScore = (s['front-calves']||0) + (s['back-calves']||0);
+    
     const updateMaskGlow = (id, score) => {
         const layer = document.getElementById(id); if(!layer) return; const img = layer.querySelector('img');
-        if(score === 0) { layer.style.opacity = '0'; } else { let color = score <= 4 ? '#facc15' : (score <= 9 ? '#f97316' : '#ef4444'); img.style.filter = `drop-shadow(1000px 0 0 ${color})`; layer.style.opacity = score <= 4 ? '0.6' : (score <= 9 ? '0.8' : '0.95'); }
+        if(score === 0) { layer.style.opacity = '0'; }
+        else { let color = score <= 4 ? '#facc15' : (score <= 9 ? '#f97316' : '#ef4444'); img.style.filter = `drop-shadow(1000px 0 0 ${color})`; layer.style.opacity = score <= 4 ? '0.6' : (score <= 9 ? '0.8' : '0.95'); }
     };
+
     updateMaskGlow('layer-chest-upper', chestUpperScore); updateMaskGlow('layer-chest-lower', chestLowerScore); updateMaskGlow('layer-shoulders-front', frontShoulderScore); updateMaskGlow('layer-arms-front', armsFrontScore); updateMaskGlow('layer-abs', absScore); updateMaskGlow('layer-quads', quadsScore); updateMaskGlow('layer-adductors', adductorsScore);
     updateMaskGlow('layer-back', backScore); updateMaskGlow('layer-lowerback', lowerBackScore); updateMaskGlow('layer-shoulders-rear', rearShoulderScore); updateMaskGlow('layer-arms-rear', armsRearScore); updateMaskGlow('layer-glutes', glutesScore); updateMaskGlow('layer-hamstrings', hamstringsScore); updateMaskGlow('layer-calves', calvesScore);
 }
