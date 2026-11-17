@@ -554,7 +554,40 @@ function getExerciseCategoryBadge(exName) {
     const colors = { "Petto": "text-blue-400 bg-blue-500/10 border-blue-500/30", "Dorso e Lombari": "text-cyan-400 bg-cyan-500/10 border-cyan-500/30", "Gambe": "text-rose-400 bg-rose-500/10 border-rose-500/30", "Spalle": "text-amber-400 bg-amber-500/10 border-amber-500/30", "Braccia": "text-purple-400 bg-purple-500/10 border-purple-500/30", "Addome e Core": "text-emerald-400 bg-emerald-500/10 border-emerald-500/30", "Custom": "text-slate-400 bg-slate-700/40 border-slate-600/50" };
     return `<span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${colors[cat] || colors["Custom"]}">${cat}</span>`;
 }
+function getQuickEnergyStatus() {
+    const logs = JSON.parse(localStorage.getItem(getDietDateKey())) || [];
+    const water = parseInt(localStorage.getItem(getWaterDateKey())) || 0;
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
+    const mealsGrouped = {};
+    logs.forEach(log => {
+        if (!mealsGrouped[log.mealType]) mealsGrouped[log.mealType] = { time: log.time, f: 0, c: 0, kcal: 0, isCheat: false };
+        if (log.time && log.time > mealsGrouped[log.mealType].time) mealsGrouped[log.mealType].time = log.time;
+        mealsGrouped[log.mealType].f += log.f;
+        mealsGrouped[log.mealType].c += log.c;
+        mealsGrouped[log.mealType].kcal += log.kcal;
+        if (log.isCheat) mealsGrouped[log.mealType].isCheat = true;
+    });
+
+    let minTimeDiff = Infinity;
+    let mealStats = null;
+    for (const data of Object.values(mealsGrouped)) {
+        if (!data.time) continue;
+        const [h, m] = data.time.split(':').map(Number);
+        let diff = currentMinutes - (h * 60 + m);
+        if (diff < 0) diff = 0;
+        if (diff >= 0 && diff < minTimeDiff) { minTimeDiff = diff; mealStats = data; }
+    }
+
+    if (!mealStats || minTimeDiff > 360) return { btnClass: 'bg-rose-900/60 text-rose-400 border border-rose-500/50 shadow-[0_0_8px_rgba(244,63,94,0.4)]' };
+    
+    const isHeavy = mealStats.isCheat || mealStats.f > 25 || mealStats.kcal > 800;
+    if (minTimeDiff < 45 || (minTimeDiff < 90 && isHeavy)) return { btnClass: 'bg-rose-900/60 text-rose-400 border border-rose-500/50 shadow-[0_0_8px_rgba(244,63,94,0.4)]' };
+    else if (minTimeDiff >= 90 && minTimeDiff <= 180 && mealStats.c > 40 && !isHeavy && water >= 4) return { btnClass: 'bg-emerald-900/60 text-emerald-400 border border-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.6)]' };
+    else if (minTimeDiff >= 60 && minTimeDiff <= 240) return { btnClass: 'bg-green-900/60 text-green-400 border border-green-500/50 shadow-[0_0_8px_rgba(74,222,128,0.4)]' };
+    else return { btnClass: 'bg-amber-900/60 text-amber-400 border border-amber-500/50 shadow-[0_0_8px_rgba(251,191,36,0.4)]' };
+}
 // ==================== RENDER SCHEDA ALLENAMENTO E WARM-UP BUTTON ====================
 function renderWorkouts() {
     const c = document.getElementById('workout-container'); c.innerHTML = '';
@@ -572,6 +605,7 @@ function renderWorkouts() {
         });
 
         const filterBtnClass = currentDomsFilters.length > 0 ? 'bg-amber-500 text-slate-900 shadow-lg' : 'bg-slate-900 hover:bg-slate-700 text-amber-400 border border-slate-700';
+        const energyBtn = getQuickEnergyStatus();
         
         let html = `<div id="tab-${key}" class="giorno-tab tab-content">
             <div class="mb-4 bg-slate-800/90 p-4 rounded-2xl border border-slate-700/80 shadow-xl flex justify-between items-start">
@@ -581,6 +615,7 @@ function renderWorkouts() {
                     <button onclick="openWarmupModal('${key}')" class="mt-3 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-500/30 px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-colors"><i class="fas fa-fire-alt"></i> Smart Warm-up</button>
                 </div>
                 <div class="flex gap-2">
+                    <button onclick="openPreWorkoutAdvisorModal()" title="Check Energia" class="${energyBtn.btnClass} rounded-xl w-10 h-10 flex items-center justify-center transition-all hover:scale-105"><i class="fas fa-bolt text-sm"></i></button>
                     <button onclick="openDomsModal()" title="Filtro DOMS" class="${filterBtnClass} rounded-xl w-10 h-10 flex items-center justify-center transition-colors shadow"><i class="fas fa-filter text-sm"></i></button>
                     <button onclick="openAddModal('${key}')" title="Aggiungi Esercizio" class="bg-blue-600 hover:bg-blue-500 text-white rounded-xl w-10 h-10 flex items-center justify-center shadow-lg transition-colors"><i class="fas fa-plus"></i></button>
                 </div>
@@ -673,6 +708,22 @@ function scrollToProgDay(dayKey) {
 // ==================== GESTIONE SFORZO RPE (COACH) ====================
 function setEffort(exId, level) {
     document.getElementById(`inp-effort-${exId}`).value = level;
+    
+    // NUOVO: Aggiorna l'etichetta di testo in alto
+    const labelEl = document.getElementById(`effort-label-${exId}`);
+    if (labelEl) {
+        if (level === 'easy') {
+            labelEl.innerText = 'SFORZO: LEGGERO';
+            labelEl.className = 'text-[8px] font-bold uppercase mb-0.5 tracking-wider text-emerald-400';
+        } else if (level === 'hard') {
+            labelEl.innerText = 'SFORZO: PESANTE';
+            labelEl.className = 'text-[8px] font-bold uppercase mb-0.5 tracking-wider text-rose-400';
+        } else {
+            labelEl.innerText = 'SFORZO: NORMALE';
+            labelEl.className = 'text-[8px] font-bold uppercase mb-0.5 tracking-wider text-amber-400';
+        }
+    }
+
     ['easy', 'normal', 'hard'].forEach(l => {
         const btn = document.getElementById(`eff-${l.substring(0,4)}-${exId}`);
         if (l === level) {
@@ -830,24 +881,25 @@ function renderProgressioni() {
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-end gap-1.5">
                         <button onclick="toggleNote('note-${ex.id}')" title="Aggiungi Nota" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl w-10 h-10 flex items-center justify-center shrink-0 transition-colors"><i class="fas fa-comment-medical text-blue-400"></i></button>
                         
-                        <!-- SELETTORE RPE / SFORZO -->
-                        <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-700 shrink-0 h-10">
-                            <button onclick="setEffort('${ex.id}', 'easy')" id="eff-easy-${ex.id}" title="Facile / Buffer ampio" class="w-8 h-8 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🟢</button>
-                            <button onclick="setEffort('${ex.id}', 'normal')" id="eff-norm-${ex.id}" title="Giusto / Target raggiunto" class="w-8 h-8 rounded-lg text-sm opacity-100 bg-slate-800 shadow transition-all scale-110">🟡</button>
-                            <button onclick="setEffort('${ex.id}', 'hard')" id="eff-hard-${ex.id}" title="Cedimento / Troppo pesante" class="w-8 h-8 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🔴</button>
-                            <input type="hidden" id="inp-effort-${ex.id}" value="normal">
+                        <!-- SELETTORE RPE / SFORZO CON ETICHETTA DINAMICA -->
+                        <div class="flex flex-col items-center shrink-0">
+                            <div id="effort-label-${ex.id}" class="text-[8px] font-bold text-amber-400 uppercase mb-0.5 tracking-wider">SFORZO: NORMALE</div>
+                            <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-700 h-10">
+                                <button onclick="setEffort('${ex.id}', 'easy')" id="eff-easy-${ex.id}" title="Facile / Buffer ampio" class="w-8 h-8 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🟢</button>
+                                <button onclick="setEffort('${ex.id}', 'normal')" id="eff-norm-${ex.id}" title="Giusto / Target raggiunto" class="w-8 h-8 rounded-lg text-sm opacity-100 bg-slate-800 shadow transition-all scale-110">🟡</button>
+                                <button onclick="setEffort('${ex.id}', 'hard')" id="eff-hard-${ex.id}" title="Cedimento / Troppo pesante" class="w-8 h-8 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🔴</button>
+                                <input type="hidden" id="inp-effort-${ex.id}" value="normal">
+                            </div>
                         </div>
 
                         <button onclick="saveProgression('${ex.id}', '${hk}', ${ex.isDomsSub || ex.isPastSub || ex.isSwapSub || false})" id="btn-save-${ex.id}" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl h-10 text-xs shadow-lg transition-colors flex items-center justify-center gap-1.5"><i class="fas fa-plus-circle"></i> Salva</button>
                     </div>
-                    <input type="text" id="note-${ex.id}" placeholder="Scrivi una nota tecnica o sensazione..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs hidden mt-2.5 outline-none focus:border-blue-500">
-                </div>
 
-                <!-- FUORI DAL RIQUADRO INTERNO: Storico Registrazioni Passate & Grafico -->
-                <div class="px-1">
+               <!-- FUORI DAL RIQUADRO INTERNO: Storico Registrazioni Passate & Grafico -->
+                <div class="px-1 mt-4">
                     <div class="flex justify-between items-center mb-1.5">
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider"><i class="fas fa-history mr-1 text-slate-500"></i>Storico Registrazioni</span>
                         <button onclick="requestDeleteHistory('${hk}', '${ex.id}')" title="Svuota storico esercizio" class="text-[10px] text-slate-500 hover:text-red-400 flex items-center gap-1"><i class="fas fa-trash-alt"></i> Svuota</button>
@@ -992,4 +1044,179 @@ function renderMapWithRange() {
 
     updateMaskGlow('layer-chest-upper', chestUpperScore); updateMaskGlow('layer-chest-lower', chestLowerScore); updateMaskGlow('layer-shoulders-front', frontShoulderScore); updateMaskGlow('layer-arms-front', armsFrontScore); updateMaskGlow('layer-abs', absScore); updateMaskGlow('layer-quads', quadsScore); updateMaskGlow('layer-adductors', adductorsScore);
     updateMaskGlow('layer-back', backScore); updateMaskGlow('layer-lowerback', lowerBackScore); updateMaskGlow('layer-shoulders-rear', rearShoulderScore); updateMaskGlow('layer-arms-rear', armsRearScore); updateMaskGlow('layer-glutes', glutesScore); updateMaskGlow('layer-hamstrings', hamstringsScore); updateMaskGlow('layer-calves', calvesScore);
+}
+// ==================== PRE-WORKOUT ADVISOR ====================
+function openPreWorkoutAdvisorModal() {
+    document.getElementById('preworkout-advisor-modal').classList.remove('hidden');
+    document.getElementById('preworkout-advisor-modal').classList.add('flex');
+    
+    // Qui in futuro potrai chiamare una funzione per generare/aggiornare 
+    // il contenuto del modale (es. renderAdvisorContent())
+}
+
+function closePreWorkoutAdvisorModal() {
+    document.getElementById('preworkout-advisor-modal').classList.add('hidden');
+    document.getElementById('preworkout-advisor-modal').classList.remove('flex');
+}
+// ==================== PRE-WORKOUT ADVISOR ====================
+function openPreWorkoutAdvisorModal() {
+    document.getElementById('preworkout-advisor-modal').classList.remove('hidden');
+    document.getElementById('preworkout-advisor-modal').classList.add('flex');
+    renderAdvisorContent();
+}
+
+function closePreWorkoutAdvisorModal() {
+    document.getElementById('preworkout-advisor-modal').classList.add('hidden');
+    document.getElementById('preworkout-advisor-modal').classList.remove('flex');
+}
+
+function renderAdvisorContent() {
+    const content = document.getElementById('preworkout-advisor-content');
+    
+    // Usa le funzioni native dell'app per pescare la data visualizzata in UI
+    const logs = JSON.parse(localStorage.getItem(getDietDateKey())) || [];
+    const water = parseInt(localStorage.getItem(getWaterDateKey())) || 0; // Dato Idratazione
+    
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Raggruppa gli alimenti per valutare l'INTERO PASTO
+    const mealsGrouped = {};
+    logs.forEach(log => {
+        if (!mealsGrouped[log.mealType]) mealsGrouped[log.mealType] = { items: [], time: log.time };
+        if (log.time && log.time > mealsGrouped[log.mealType].time) mealsGrouped[log.mealType].time = log.time;
+        mealsGrouped[log.mealType].items.push(log);
+    });
+
+    let mostRecentMeal = null;
+    let minTimeDiff = Infinity;
+    let mealStats = { kcal: 0, p: 0, c: 0, f: 0, isCheat: false, name: '', timeStr: '', items: [] };
+
+    // Trova il pasto più recente
+    for (const [mealType, data] of Object.entries(mealsGrouped)) {
+        if (!data.time) continue;
+        const [h, m] = data.time.split(':').map(Number);
+        const mealMinutes = h * 60 + m;
+        let diff = currentMinutes - mealMinutes;
+        
+        if (diff < 0) diff = 0; 
+        
+        if (diff >= 0 && diff < minTimeDiff) {
+            minTimeDiff = diff;
+            mostRecentMeal = mealType;
+            
+            mealStats = data.items.reduce((acc, item) => {
+                acc.kcal += item.kcal;
+                acc.p += item.p;
+                acc.c += item.c;
+                acc.f += item.f;
+                if (item.isCheat) acc.isCheat = true;
+                return acc;
+            }, { kcal: 0, p: 0, c: 0, f: 0, isCheat: false });
+            mealStats.name = mealType;
+            mealStats.timeStr = data.time;
+            mealStats.items = data.items; 
+        }
+    }
+
+    // Logica Semafori 
+    let title, message, adviceHtml, colorClass, bgClass, icon;
+
+    if (!mostRecentMeal || minTimeDiff > 360) {
+        title = 'Riserva in Ebollizione 🔴';
+        colorClass = 'text-rose-500';
+        bgClass = 'bg-rose-900/30 border-rose-500/50';
+        icon = 'fa-battery-empty';
+        message = !mostRecentMeal ? "Non hai ancora mangiato nulla oggi." : `Non mangi da oltre ${Math.floor(minTimeDiff/60)} ore.`;
+        adviceHtml = `<b class="text-rose-400">Consiglio:</b> Le tue scorte di glicogeno potrebbero essere basse. Assumi una fonte di carbo rapida e naturale (es. 1 banana matura, 2 datteri o 1 cucchiaio di miele) prima di spingere.`;
+    } else {
+        const isHeavy = mealStats.isCheat || mealStats.f > 25 || mealStats.kcal > 800;
+        
+        if (minTimeDiff < 45 || (minTimeDiff < 90 && isHeavy)) {
+            title = 'Digestione in Corso 🔴';
+            colorClass = 'text-rose-500';
+            bgClass = 'bg-rose-900/30 border-rose-500/50';
+            icon = 'fa-fire';
+            message = `Hai mangiato <b>${mealStats.name}</b> da soli ${minTimeDiff} minuti. ${isHeavy ? 'Il pasto era anche bello sostanzioso.' : ''}`;
+            adviceHtml = `<b class="text-rose-400">Consiglio:</b> Il sangue è nello stomaco. Aspetta almeno altri ${isHeavy ? '45-60' : '20-30'} minuti, fai molta mobilità o rischi nausea.`;
+        } 
+        else if (minTimeDiff >= 90 && minTimeDiff <= 180 && mealStats.c > 40 && !isHeavy && water >= 4) {
+            title = 'Energia Ottimale 🌟';
+            colorClass = 'text-emerald-400';
+            bgClass = 'bg-emerald-900/40 border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.4)]';
+            icon = 'fa-battery-full';
+            message = `Condizioni perfette! <b>${mealStats.name}</b> digerito (da ${Math.floor(minTimeDiff/60)}h e ${minTimeDiff%60}m) con ottimi carbo e idratazione.`;
+            adviceHtml = `<b class="text-emerald-400">Consiglio:</b> Sei al tuo picco glicemico e digestivo. Spacca tutto!`;
+        }
+        else if (minTimeDiff >= 60 && minTimeDiff <= 240) {
+            title = 'Pronto all\'Azione 🟢';
+            colorClass = 'text-green-500';
+            bgClass = 'bg-green-900/30 border-green-500/50';
+            icon = 'fa-check-circle';
+            message = `Hai digerito <b>${mealStats.name}</b> (${Math.floor(minTimeDiff/60)}h e ${minTimeDiff%60}m fa).`;
+            adviceHtml = `<b class="text-green-400">Consiglio:</b> Buona energia. Se l'allenamento sarà molto lungo e intenso e sudi molto, puoi sorseggiare acqua con limone e un pizzico di sale.`;
+        }
+        else {
+            title = 'Energia in Calo 🟡';
+            colorClass = 'text-amber-400';
+            bgClass = 'bg-amber-900/30 border-amber-500/50';
+            icon = 'fa-battery-half';
+            message = `L'ultimo pasto (<b>${mealStats.name}</b>) risale a ${Math.floor(minTimeDiff/60)} ore fa.`;
+            adviceHtml = `<b class="text-amber-400">Consiglio:</b> Stai entrando in fase di deplezione. Valuta uno snack leggero e naturale (es. una mela o 1 galletta di riso) se ti senti stanco.`;
+        }
+    }
+    
+    // --- NUOVA VALUTAZIONE VISIVA IDRATAZIONE ---
+    let hydrationAdvice = '';
+    if (water === 0) {
+        hydrationAdvice = `<div class="mt-2 text-cyan-300 pt-2 border-t border-slate-700/50"><i class="fas fa-exclamation-triangle text-cyan-400 mr-1"></i><b>Allarme Idratazione:</b> Non hai registrato nemmeno un bicchiere d'acqua oggi! Bevi almeno 500ml prima di iniziare.</div>`;
+    } else if (water < 4) {
+        hydrationAdvice = `<div class="mt-2 text-cyan-200 pt-2 border-t border-slate-700/50"><i class="fas fa-tint text-cyan-400 mr-1"></i><b>Idratazione Bassa:</b> Hai bevuto poco (${water} bicchier${water === 1 ? 'e' : 'i'}). Cerca di bere qualche sorso durante il riscaldamento.</div>`;
+    } else {
+        hydrationAdvice = `<div class="mt-2 text-emerald-300 pt-2 border-t border-slate-700/50"><i class="fas fa-tint text-cyan-400 mr-1"></i><b>Idratazione Ottima:</b> Hai bevuto ${water} bicchieri d'acqua, i tuoi muscoli sono ben idratati!</div>`;
+    }
+
+    // Genera la lista dei cibi consumati nel pasto
+    let itemsHtml = '';
+    if (mealStats.items && mealStats.items.length > 0) {
+        itemsHtml = `<div class="mt-3 pt-3 border-t border-slate-700/50 space-y-1.5 w-full text-left">
+            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Cosa hai mangiato:</div>`;
+        mealStats.items.forEach(item => {
+            itemsHtml += `<div class="flex justify-between items-center text-[10px] text-slate-300">
+                <span class="truncate pr-2">• ${item.name}</span>
+                <span class="text-slate-500 shrink-0">${item.kcal} kcal</span>
+            </div>`;
+        });
+        itemsHtml += `</div>`;
+    }
+
+    // Costruzione Grafica UI
+    content.innerHTML = `
+        <div class="rounded-xl border ${bgClass} p-4 mb-4 text-center transition-all duration-300">
+            <i class="fas ${icon} ${colorClass} text-4xl mb-2"></i>
+            <h3 class="font-extrabold text-white text-lg">${title}</h3>
+            <p class="text-xs text-slate-300 mt-1">${message}</p>
+        </div>
+        
+        ${mostRecentMeal ? `
+        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/50 mb-4 flex flex-col shadow-inner">
+            <div class="flex justify-between items-start mb-1">
+                <div>
+                    <div class="text-xs font-bold text-slate-200">Ultimo Pasto: <span class="text-blue-400">${mealStats.name}</span></div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">Ore ${mealStats.timeStr} • ${mealStats.kcal} kcal totali</div>
+                </div>
+                <div class="flex gap-1 text-[9px] font-bold">
+                    <span class="bg-slate-950 text-blue-400 px-1.5 py-0.5 rounded border border-slate-700/60">P: ${mealStats.p}g</span>
+                    <span class="bg-slate-950 text-amber-400 px-1.5 py-0.5 rounded border border-slate-700/60">C: ${mealStats.c}g</span>
+                    <span class="bg-slate-950 text-rose-400 px-1.5 py-0.5 rounded border border-slate-700/60">G: ${mealStats.f}g</span>
+                </div>
+            </div>
+            ${itemsHtml}
+        </div>` : ''}
+
+        <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-700/60 text-[11px] text-slate-300 leading-relaxed">
+            ${adviceHtml}
+            ${hydrationAdvice}
+        </div>
+    `;
 }
