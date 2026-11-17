@@ -897,8 +897,12 @@ function renderProgressioni() {
 
                         <button onclick="saveProgression('${ex.id}', '${hk}', ${ex.isDomsSub || ex.isPastSub || ex.isSwapSub || false})" id="btn-save-${ex.id}" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl h-10 text-xs shadow-lg transition-colors flex items-center justify-center gap-1.5"><i class="fas fa-plus-circle"></i> Salva</button>
                     </div>
+                    
+                    <!-- INPUT NOTE E CHIUSURA DEL RIQUADRO INTERNO -->
+                    <input type="text" id="note-${ex.id}" placeholder="Scrivi una nota tecnica o sensazione..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs hidden mt-2.5 outline-none focus:border-blue-500">
+                </div>
 
-               <!-- FUORI DAL RIQUADRO INTERNO: Storico Registrazioni Passate & Grafico -->
+                <!-- FUORI DAL RIQUADRO INTERNO: Storico Registrazioni Passate & Grafico -->
                 <div class="px-1 mt-4">
                     <div class="flex justify-between items-center mb-1.5">
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider"><i class="fas fa-history mr-1 text-slate-500"></i>Storico Registrazioni</span>
