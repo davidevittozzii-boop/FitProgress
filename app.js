@@ -71,6 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderProgressioni();
     renderMonthlyCalendar();
     renderNutritionDashboard();
+    updateProfileMetabolicSummary();
     switchMainTab('workout');
 });
 
@@ -94,12 +95,14 @@ function switchMainTab(tab) {
         if(iconBadge) iconBadge.innerHTML = `<i class="fas fa-user text-sm"></i>`;
         headerBtn.classList.add('hidden'); headerBtn.classList.remove('flex');
         dynNav.classList.add('hidden');
+        updateProfileMetabolicSummary();
         renderMonthlyCalendar();
     } else if (tab === 'workout') {
         headerTitle.innerText = currentRoutine.name;
         if(iconBadge) iconBadge.innerHTML = `<i class="fas fa-dumbbell text-sm"></i>`;
         headerBtn.classList.remove('hidden'); headerBtn.classList.add('flex');
         dynNav.classList.remove('hidden');
+        renderWorkouts();
         reopenCurrentTab();
     } else if (tab === 'alimentazione') {
         headerTitle.innerText = "Alimentazione";
@@ -112,77 +115,438 @@ function switchMainTab(tab) {
         if(iconBadge) iconBadge.innerHTML = `<i class="fas fa-chart-line text-sm"></i>`;
         headerBtn.classList.add('hidden'); headerBtn.classList.remove('flex');
         dynNav.classList.add('hidden');
+        const progEnergyBtn = document.getElementById('prog-energy-btn');
+        if (progEnergyBtn) {
+            progEnergyBtn.className = `${getQuickEnergyStatus().btnClass} rounded-xl w-10 h-10 flex items-center justify-center transition-all hover:scale-105 shrink-0`;
+        }
     }
 }
 
-// (TUTTE LE FUNZIONI PROFILO E ALIMENTAZIONE RIMANGONO INVARIATE)
-function salvaProfiloEMisure() {
-    const profilo = {
-        nome: document.getElementById('prof-nome').value,
-        cognome: document.getElementById('prof-cognome').value,
-        sesso: document.getElementById('prof-sesso').value || 'M',
-        eta: document.getElementById('prof-eta').value,
-        peso: document.getElementById('prof-peso').value,
-        altezza: document.getElementById('prof-altezza').value,
-        attivita: document.getElementById('prof-attivita').value || '1.375',
-        obiettivo: document.getElementById('prof-obiettivo').value || 'maint'
-    };
-    localStorage.setItem('user_profile', JSON.stringify(profilo));
-
-    const date = document.getElementById('measure-date').value;
-    const m = {
-        date: date,
-        spalle: document.getElementById('meas-spalle').value,
-        petto: document.getElementById('meas-petto').value,
-        braccia: document.getElementById('meas-braccia').value,
-        vita: document.getElementById('meas-vita').value,
-        fianchi: document.getElementById('meas-fianchi').value,
-        cosce: document.getElementById('meas-cosce').value,
-        polpacci: document.getElementById('meas-polpacci').value
-    };
-
-    if (date && (m.spalle || m.petto || m.braccia || m.vita || m.fianchi || m.cosce || m.polpacci)) {
-        let hist = JSON.parse(localStorage.getItem('measurements_history')) || [];
-        let existingIdx = hist.findIndex(x => x.date === date);
-        if(existingIdx >= 0) hist[existingIdx] = m; else hist.unshift(m);
-        hist.sort((a,b) => new Date(b.date) - new Date(a.date));
-        localStorage.setItem('measurements_history', JSON.stringify(hist));
-        ['spalle', 'petto', 'braccia', 'vita', 'fianchi', 'cosce', 'polpacci'].forEach(id => document.getElementById(`meas-${id}`).value = '');
-        renderMeasurements();
+// ==================== PROFILO, MASSA MAGRA & METABOLISMO ====================
+function toggleLbmCalculator() {
+    const box = document.getElementById('lbm-calc-box');
+    if (!box) return;
+    box.classList.toggle('hidden');
+    if (!box.classList.contains('hidden')) {
+        prefillLbmCalcFromProfile();
     }
-    renderNutritionDashboard();
-    const msg = document.getElementById('prof-msg'); msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000);
 }
+
+function toggleCalcFianchiField() {
+    const sesso = document.getElementById('calc-lbm-sesso').value;
+    const wrap = document.getElementById('calc-lbm-fianchi-wrap');
+    if (!wrap) return;
+    if (sesso === 'F') wrap.classList.remove('opacity-50');
+    else wrap.classList.add('opacity-50');
+}
+
+function prefillLbmCalcFromProfile() {
+    const sesso = document.getElementById('prof-sesso').value || 'M';
+    const altezza = document.getElementById('prof-altezza').value || '';
+    const peso = document.getElementById('prof-peso').value || '';
+    document.getElementById('calc-lbm-sesso').value = sesso;
+    if (altezza) document.getElementById('calc-lbm-altezza').value = altezza;
+    if (peso) document.getElementById('calc-lbm-peso').value = peso;
+
+    const hist = JSON.parse(localStorage.getItem('measurements_history')) || [];
+    if (hist.length > 0) {
+        if (!document.getElementById('calc-lbm-vita').value && hist[0].vita) {
+            document.getElementById('calc-lbm-vita').value = hist[0].vita;
+        }
+        if (!document.getElementById('calc-lbm-fianchi').value && hist[0].fianchi) {
+            document.getElementById('calc-lbm-fianchi').value = hist[0].fianchi;
+        }
+    }
+    toggleCalcFianchiField();
+}
+
+function eseguiCalcoloMassaMagra() {
+    const sesso = document.getElementById('calc-lbm-sesso').value || 'M';
+    const altezza = parseFloat(document.getElementById('calc-lbm-altezza').value);
+    const peso = parseFloat(document.getElementById('calc-lbm-peso').value);
+    const collo = parseFloat(document.getElementById('calc-lbm-collo').value);
+    const vita = parseFloat(document.getElementById('calc-lbm-vita').value);
+    const fianchi = parseFloat(document.getElementById('calc-lbm-fianchi').value);
+    const resBox = document.getElementById('calc-lbm-result');
+
+    if (!altezza || !peso || !collo || !vita || (sesso === 'F' && !fianchi)) {
+        resBox.classList.remove('hidden');
+        resBox.innerHTML = `<span class="text-rose-400 font-bold"><i class="fas fa-exclamation-circle mr-1"></i>Compila tutte le misure richieste.</span>`;
+        return;
+    }
+
+    let bf = 0;
+    if (sesso === 'M') {
+        if (vita - collo <= 0) {
+            resBox.classList.remove('hidden');
+            resBox.innerHTML = `<span class="text-rose-400 font-bold">La vita deve essere maggiore del collo.</span>`;
+            return;
+        }
+        bf = 495 / (1.0324 - 0.19077 * Math.log10(vita - collo) + 0.15456 * Math.log10(altezza)) - 450;
+    } else {
+        if (vita + fianchi - collo <= 0) {
+            resBox.classList.remove('hidden');
+            resBox.innerHTML = `<span class="text-rose-400 font-bold">Controlla le misure inserite.</span>`;
+            return;
+        }
+        bf = 495 / (1.29579 - 0.35004 * Math.log10(vita + fianchi - collo) + 0.22100 * Math.log10(altezza)) - 450;
+    }
+
+    bf = Math.max(4, Math.min(60, bf));
+    const lbm = +(peso * (1 - bf / 100)).toFixed(1);
+    const bfRounded = +bf.toFixed(1);
+
+    document.getElementById('prof-lbm').value = lbm;
+    const bfBadge = document.getElementById('prof-bf-badge');
+    if (bfBadge) {
+        bfBadge.innerText = `BF stimata: ${bfRounded}%`;
+        bfBadge.classList.remove('hidden');
+    }
+
+    resBox.classList.remove('hidden');
+    resBox.innerHTML = `
+        <div>
+            <div class="font-extrabold text-emerald-300">Massa Magra: ${lbm} kg</div>
+            <div class="text-[10px] text-slate-300">Massa Grassa: ${bfRounded}%</div>
+        </div>
+        <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-lg text-[10px] font-bold">Pronta ✓</span>
+    `;
+}
+
+function salvaProfiloEMisure(section) {
+    const pExisting = JSON.parse(localStorage.getItem('user_profile')) || {};
+    let profilo = { ...pExisting };
+
+    if (section === 'personal') {
+        profilo.nome = document.getElementById('prof-nome').value;
+        profilo.cognome = document.getElementById('prof-cognome').value;
+        localStorage.setItem('user_profile', JSON.stringify(profilo));
+        const msg = document.getElementById('prof-personal-msg');
+        msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000);
+        return;
+    }
+
+    if (section === 'kcal') {
+        const pesoVal = parseFloat(document.getElementById('prof-peso').value);
+        const lbmVal = parseFloat(document.getElementById('prof-lbm').value);
+        let bfCalc = null;
+        if (pesoVal > 0 && lbmVal > 0 && lbmVal < pesoVal) {
+            bfCalc = +(((pesoVal - lbmVal) / pesoVal) * 100).toFixed(1);
+        }
+
+        profilo.sesso = document.getElementById('prof-sesso').value || 'M';
+        profilo.eta = document.getElementById('prof-eta').value;
+        profilo.peso = document.getElementById('prof-peso').value;
+        profilo.altezza = document.getElementById('prof-altezza').value;
+        profilo.attivita = document.getElementById('prof-attivita').value || '1.375';
+        profilo.obiettivo = document.getElementById('prof-obiettivo').value || 'maint';
+        profilo.lbm = lbmVal > 0 ? lbmVal : '';
+        profilo.bf = bfCalc;
+        profilo.collo = document.getElementById('calc-lbm-collo') ? document.getElementById('calc-lbm-collo').value : '';
+
+        localStorage.setItem('user_profile', JSON.stringify(profilo));
+        updateProfileMetabolicSummary();
+        renderNutritionDashboard();
+        const msg = document.getElementById('prof-msg');
+        msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000);
+        return;
+    }
+
+    if (section === 'measures') {
+        const date = document.getElementById('measure-date').value;
+        const m = {
+            date: date,
+            spalle: document.getElementById('meas-spalle').value,
+            petto: document.getElementById('meas-petto').value,
+            braccia: document.getElementById('meas-braccia').value,
+            vita: document.getElementById('meas-vita').value,
+            fianchi: document.getElementById('meas-fianchi').value,
+            cosce: document.getElementById('meas-cosce').value,
+            polpacci: document.getElementById('meas-polpacci').value
+        };
+
+        if (date && (m.spalle || m.petto || m.braccia || m.vita || m.fianchi || m.cosce || m.polpacci)) {
+            let hist = JSON.parse(localStorage.getItem('measurements_history')) || [];
+            let existingIdx = hist.findIndex(x => x.date === date);
+            if(existingIdx >= 0) hist[existingIdx] = m; else hist.unshift(m);
+            hist.sort((a,b) => new Date(b.date) - new Date(a.date));
+            localStorage.setItem('measurements_history', JSON.stringify(hist));
+            ['spalle', 'petto', 'braccia', 'vita', 'fianchi', 'cosce', 'polpacci'].forEach(id => document.getElementById(`meas-${id}`).value = '');
+            renderMeasurements();
+        }
+        const msg = document.getElementById('prof-meas-msg');
+        msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000);
+        return;
+    }
+}
+
 function caricaProfilo() {
     const p = JSON.parse(localStorage.getItem('user_profile'));
-    if(p) { document.getElementById('prof-nome').value = p.nome || ''; document.getElementById('prof-cognome').value = p.cognome || ''; document.getElementById('prof-sesso').value = p.sesso || 'M'; document.getElementById('prof-eta').value = p.eta || ''; document.getElementById('prof-peso').value = p.peso || ''; document.getElementById('prof-altezza').value = p.altezza || ''; document.getElementById('prof-attivita').value = p.attivita || '1.375'; document.getElementById('prof-obiettivo').value = p.obiettivo || 'maint'; }
+    if(p) {
+        document.getElementById('prof-nome').value = p.nome || '';
+        document.getElementById('prof-cognome').value = p.cognome || '';
+        document.getElementById('prof-sesso').value = p.sesso || 'M';
+        document.getElementById('prof-eta').value = p.eta || '';
+        document.getElementById('prof-peso').value = p.peso || '';
+        document.getElementById('prof-altezza').value = p.altezza || '';
+        document.getElementById('prof-attivita').value = p.attivita || '1.375';
+        document.getElementById('prof-obiettivo').value = p.obiettivo || 'maint';
+        if (document.getElementById('prof-lbm')) document.getElementById('prof-lbm').value = p.lbm || '';
+        if (document.getElementById('calc-lbm-collo') && p.collo) document.getElementById('calc-lbm-collo').value = p.collo;
+        const bfBadge = document.getElementById('prof-bf-badge');
+        if (bfBadge && p.bf) {
+            bfBadge.innerText = `BF stimata: ${p.bf}%`;
+            bfBadge.classList.remove('hidden');
+        }
+    }
 }
+
+function updateProfileMetabolicSummary() {
+    const targets = calculateMacroTargets();
+    const lbmEl = document.getElementById('prof-summary-lbm');
+    const formEl = document.getElementById('prof-summary-formula');
+    const bmrEl = document.getElementById('prof-summary-bmr');
+    const tdeeEl = document.getElementById('prof-summary-tdee');
+    if (!lbmEl || !bmrEl || !tdeeEl) return;
+
+    if (!targets.valid) {
+        lbmEl.innerText = '-- kg';
+        bmrEl.innerText = '-- kcal';
+        tdeeEl.innerText = '-- kcal';
+        return;
+    }
+
+    lbmEl.innerText = targets.lbm ? `${targets.lbm} kg` : 'N/D';
+    formEl.innerText = targets.formula;
+    bmrEl.innerText = `${targets.bmr} kcal`;
+    tdeeEl.innerText = `${targets.tdeeBase} kcal`;
+}
+
 function calculateMacroTargets() {
     const p = JSON.parse(localStorage.getItem('user_profile')) || {};
-    const peso = parseFloat(p.peso), altezza = parseFloat(p.altezza), eta = parseFloat(p.eta), sesso = p.sesso || 'M', act = parseFloat(p.attivita) || 1.375, goal = p.obiettivo || 'maint';
-    if (!peso || !altezza || !eta) return { valid: false, kcal: 2000, p: 130, c: 220, f: 65 };
-    let bmr = (10 * peso) + (6.25 * altezza) - (5 * eta) + (sesso === 'M' ? 5 : -161);
-    let tdee = bmr * act;
-    let targetKcal = tdee, protPerKg = 1.8, fatPerKg = 0.9;
-    if (goal === 'cut') { targetKcal = tdee * 0.80; protPerKg = 2.0; fatPerKg = 0.8; } else if (goal === 'bulk') { targetKcal = tdee * 1.15; protPerKg = 1.8; fatPerKg = 1.0; }
-    targetKcal = Math.round(targetKcal); let targetP = Math.round(peso * protPerKg); let targetF = Math.round(peso * fatPerKg); let remainingKcal = targetKcal - (targetP * 4) - (targetF * 9); let targetC = Math.max(50, Math.round(remainingKcal / 4));
-    return { valid: true, kcal: targetKcal, p: targetP, c: targetC, f: targetF };
+    const peso = parseFloat(p.peso), altezza = parseFloat(p.altezza), eta = parseFloat(p.eta);
+    const sesso = p.sesso || 'M', act = parseFloat(p.attivita) || 1.375, goal = p.obiettivo || 'maint';
+    const lbm = parseFloat(p.lbm);
+
+    if ((!peso || !altezza || !eta) && !(lbm > 0 && peso > 0)) {
+        return { valid: false, kcal: 2000, p: 130, c: 220, f: 65, bmr: 1600, tdeeBase: 2000, lbm: null, formula: 'Standard', goal: goal };
+    }
+
+    let bmr = 0;
+    let formulaUsed = 'Mifflin-St Jeor';
+
+    if (lbm > 0 && (!peso || lbm < peso)) {
+        bmr = 370 + (21.6 * lbm);
+        formulaUsed = 'Katch-McArdle';
+    } else {
+        bmr = (10 * peso) + (6.25 * altezza) - (5 * eta) + (sesso === 'M' ? 5 : -161);
+    }
+
+    let tdeeBase = bmr * act;
+    let targetKcal = tdeeBase;
+
+    const refWeight = (lbm > 0) ? lbm : peso;
+    let protPerKg = (lbm > 0) ? 2.2 : 1.8;
+    let fatPerKg = 0.9;
+
+    if (goal === 'cut') {
+        targetKcal = tdeeBase * 0.80;
+        protPerKg = (lbm > 0) ? 2.4 : 2.0;
+        fatPerKg = 0.8;
+    } else if (goal === 'bulk') {
+        targetKcal = tdeeBase * 1.15;
+        protPerKg = (lbm > 0) ? 2.1 : 1.8;
+        fatPerKg = 1.0;
+    }
+
+    targetKcal = Math.round(targetKcal);
+    let targetP = Math.round(refWeight * protPerKg);
+    let targetF = Math.round(peso * fatPerKg);
+    let remainingKcal = targetKcal - (targetP * 4) - (targetF * 9);
+    let targetC = Math.max(50, Math.round(remainingKcal / 4));
+
+    return {
+        valid: true,
+        kcal: targetKcal,
+        p: targetP,
+        c: targetC,
+        f: targetF,
+        bmr: Math.round(bmr),
+        tdeeBase: Math.round(tdeeBase),
+        lbm: lbm > 0 ? lbm : null,
+        formula: formulaUsed,
+        goal: goal
+    };
 }
+
+// ==================== STIMA KCAL BRUCIATE IN ALLENAMENTO ====================
+function calculateWorkoutCaloriesForDate(dateStr) {
+    const p = JSON.parse(localStorage.getItem('user_profile')) || {};
+    const peso = parseFloat(p.peso) || 70;
+    const lbm = parseFloat(p.lbm) || (peso * 0.82);
+    const massFactor = Math.max(0.75, Math.min(1.45, lbm / 62));
+
+    let totalSets = 0;
+    let totalKcal = 0;
+
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('hist_')) {
+            const logs = JSON.parse(localStorage.getItem(key)) || [];
+            const dayLogs = logs.filter(l => l.date === dateStr);
+            if (dayLogs.length === 0) continue;
+
+            let muscleMultiplier = 1.0;
+            const dbEx = exerciseDB.find(e => getHistKey(e.name) === key);
+            if (dbEx && dbEx.muscles) {
+                const mSum = Object.values(dbEx.muscles).reduce((a, b) => a + b, 0);
+                muscleMultiplier = 0.75 + Math.min(0.65, mSum * 0.08);
+            }
+
+            dayLogs.forEach(log => {
+                const sets = parseInt(log.sets) || 0;
+                const reps = parseInt(log.reps) || 10;
+                if (sets <= 0) return;
+
+                let effortMult = 1.0;
+                if (log.effort === 'easy') effortMult = 0.85;
+                else if (log.effort === 'hard') effortMult = 1.20;
+
+                const repFactor = Math.max(0.8, Math.min(1.3, reps / 10));
+                const kcalPerSet = 7.5 * massFactor * muscleMultiplier * effortMult * repFactor;
+
+                totalSets += sets;
+                totalKcal += sets * kcalPerSet;
+            });
+        }
+    }
+
+    if (totalSets > 0) {
+        totalKcal += 25 * massFactor;
+    }
+
+    return { kcal: Math.round(totalKcal), sets: totalSets };
+}
+
 function getDietDateKey(customDateStr = null) { return 'diet_log_' + (customDateStr || document.getElementById('diet-date').value || new Date().toISOString().split('T')[0]); }
 function getWaterDateKey(customDateStr = null) { return 'water_log_' + (customDateStr || document.getElementById('diet-date').value || new Date().toISOString().split('T')[0]); }
 function updateWaterCount(delta) { const wKey = getWaterDateKey(); let cur = parseInt(localStorage.getItem(wKey)) || 0; cur = Math.max(0, cur + delta); localStorage.setItem(wKey, cur); renderNutritionDashboard(); }
+
 function renderNutritionDashboard() {
-    const targets = calculateMacroTargets(); const warningEl = document.getElementById('diet-profile-warning');
+    const targets = calculateMacroTargets();
+    const warningEl = document.getElementById('diet-profile-warning');
     if (!targets.valid) warningEl.classList.remove('hidden'); else warningEl.classList.add('hidden');
-    const glasses = parseInt(localStorage.getItem(getWaterDateKey())) || 0; const liters = (glasses * 0.25).toFixed(2).replace(/\.00$/, '.0').replace(/(\.\d)0$/, '$1');
-    document.getElementById('water-glasses-count').innerText = glasses; document.getElementById('water-liters-count').innerText = liters; document.getElementById('water-progress-bar').style.width = `${Math.min(100, (glasses / 8) * 100)}%`;
-    const logs = JSON.parse(localStorage.getItem(getDietDateKey())) || []; let totKcal = 0, totP = 0, totC = 0, totF = 0;
+
+    const currentDateStr = document.getElementById('diet-date').value || new Date().toISOString().split('T')[0];
+    const workoutBurn = calculateWorkoutCaloriesForDate(currentDateStr);
+    const effectiveTargetKcal = targets.kcal + workoutBurn.kcal;
+
+    const glasses = parseInt(localStorage.getItem(getWaterDateKey())) || 0;
+    const liters = (glasses * 0.25).toFixed(2).replace(/\.00$/, '.0').replace(/(\.\d)0$/, '$1');
+    document.getElementById('water-glasses-count').innerText = glasses;
+    document.getElementById('water-liters-count').innerText = liters;
+    document.getElementById('water-progress-bar').style.width = `${Math.min(100, (glasses / 8) * 100)}%`;
+
+    const logs = JSON.parse(localStorage.getItem(getDietDateKey())) || [];
+    let totKcal = 0, totP = 0, totC = 0, totF = 0;
     logs.forEach(item => { totKcal += item.kcal; totP += item.p; totC += item.c; totF += item.f; });
-    document.getElementById('kcal-current').innerText = Math.round(totKcal); document.getElementById('kcal-target').innerText = targets.kcal; document.getElementById('macro-p-cur').innerText = Math.round(totP); document.getElementById('macro-p-tar').innerText = targets.p; document.getElementById('macro-c-cur').innerText = Math.round(totC); document.getElementById('macro-c-tar').innerText = targets.c; document.getElementById('macro-f-cur').innerText = Math.round(totF); document.getElementById('macro-f-tar').innerText = targets.f;
-    const kcalPct = Math.min(100, Math.round((totKcal / targets.kcal) * 100)); const kcalBar = document.getElementById('kcal-progress-bar'); const badge = document.getElementById('kcal-status-badge'); kcalBar.style.width = `${kcalPct}%`;
-    const ratio = totKcal / targets.kcal;
-    if (ratio < 0.85) { kcalBar.className = "h-full bg-blue-500 transition-all duration-300 rounded-full"; badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-700 text-slate-300"; badge.innerText = `Mancano ${Math.max(0, targets.kcal - Math.round(totKcal))} kcal`; } else if (ratio <= 1.08) { kcalBar.className = "h-full bg-emerald-500 transition-all duration-300 rounded-full"; badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-500/40"; badge.innerText = "Target Raggiunto!"; } else { kcalBar.className = "h-full bg-rose-500 transition-all duration-300 rounded-full"; badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-900/60 text-rose-300 border border-rose-500/40"; badge.innerText = `Sforato di ${Math.round(totKcal) - targets.kcal} kcal`; }
-    document.getElementById('macro-p-bar').style.width = `${Math.min(100, (totP / targets.p) * 100)}%`; document.getElementById('macro-c-bar').style.width = `${Math.min(100, (totC / targets.c) * 100)}%`; document.getElementById('macro-f-bar').style.width = `${Math.min(100, (totF / targets.f) * 100)}%`;
+
+    document.getElementById('kcal-current').innerText = Math.round(totKcal);
+    document.getElementById('kcal-target').innerText = effectiveTargetKcal;
+    document.getElementById('macro-p-cur').innerText = Math.round(totP);
+    document.getElementById('macro-p-tar').innerText = targets.p;
+    document.getElementById('macro-c-cur').innerText = Math.round(totC);
+    document.getElementById('macro-c-tar').innerText = targets.c + Math.round(workoutBurn.kcal / 4);
+    document.getElementById('macro-f-cur').innerText = Math.round(totF);
+    document.getElementById('macro-f-tar').innerText = targets.f;
+
+    const kcalPct = Math.min(100, Math.round((totKcal / effectiveTargetKcal) * 100));
+    const kcalBar = document.getElementById('kcal-progress-bar');
+    const badge = document.getElementById('kcal-status-badge');
+    kcalBar.style.width = `${kcalPct}%`;
+    const ratio = totKcal / effectiveTargetKcal;
+
+    if (ratio < 0.85) {
+        kcalBar.className = "h-full bg-blue-500 transition-all duration-300 rounded-full";
+        badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-700 text-slate-300";
+        badge.innerText = `Mancano ${Math.max(0, effectiveTargetKcal - Math.round(totKcal))} kcal`;
+    } else if (ratio <= 1.08) {
+        kcalBar.className = "h-full bg-emerald-500 transition-all duration-300 rounded-full";
+        badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-500/40";
+        badge.innerText = "Target Raggiunto!";
+    } else {
+        kcalBar.className = "h-full bg-rose-500 transition-all duration-300 rounded-full";
+        badge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-900/60 text-rose-300 border border-rose-500/40";
+        badge.innerText = `Sforato di ${Math.round(totKcal) - effectiveTargetKcal} kcal`;
+    }
+
+    document.getElementById('macro-p-bar').style.width = `${Math.min(100, (totP / targets.p) * 100)}%`;
+    document.getElementById('macro-c-bar').style.width = `${Math.min(100, (totC / (targets.c + Math.round(workoutBurn.kcal / 4))) * 100)}%`;
+    document.getElementById('macro-f-bar').style.width = `${Math.min(100, (totF / targets.f) * 100)}%`;
+
+    // --- AGGIORNAMENTO CARD BILANCIO & COMMENTO TECNICO ---
+    const totalOut = targets.tdeeBase + workoutBurn.kcal;
+    const netBalance = Math.round(totKcal) - totalOut;
+
+    const elTdeeBase = document.getElementById('bal-tdee-base');
+    if (elTdeeBase) {
+        elTdeeBase.innerText = targets.tdeeBase;
+        document.getElementById('bal-bmr-sub').innerText = `BMR: ${targets.bmr} (${targets.lbm ? 'Katch' : 'Mifflin'})`;
+        document.getElementById('bal-workout-kcal').innerText = workoutBurn.kcal;
+        document.getElementById('bal-workout-sets').innerText = `${workoutBurn.sets} serie oggi`;
+        document.getElementById('bal-total-out').innerText = totalOut;
+
+        const goalPill = document.getElementById('energy-goal-pill');
+        const goalNames = { 'cut': '🔥 Obiettivo: Deficit (-20%)', 'maint': '⚖️ Obiettivo: Mantenimento', 'bulk': '💪 Obiettivo: Surplus (+15%)' };
+        goalPill.innerText = goalNames[targets.goal] || 'Mantenimento';
+
+        const netValEl = document.getElementById('bal-net-value');
+        const netDescEl = document.getElementById('bal-net-desc');
+        const netBoxEl = document.getElementById('bal-net-box');
+        const techCommentEl = document.getElementById('bal-tech-comment');
+
+        const sign = netBalance > 0 ? '+' : '';
+        const stateWord = netBalance < -80 ? 'Deficit' : (netBalance > 80 ? 'Surplus' : 'Pareggio');
+        netValEl.innerText = `${sign}${netBalance} kcal`;
+
+        if (logs.length === 0) {
+            netValEl.className = "text-base font-extrabold text-slate-400";
+            netDescEl.innerText = "Registra i pasti di oggi per calcolare Surplus o Deficit reale.";
+            netBoxEl.className = "bg-slate-900/95 p-3 rounded-xl border border-slate-700/70 flex justify-between items-center";
+            techCommentEl.innerHTML = `<b>Analisi Nutrizionale:</b> Nessun pasto registrato per la data odierna. Inserisci almeno un pasto per sbloccare il commento tecnico e le soluzioni mirate.`;
+        } else {
+            let isGood = false;
+            if (targets.goal === 'cut' && netBalance <= -150 && netBalance >= -800) isGood = true;
+            else if (targets.goal === 'bulk' && netBalance >= 100 && netBalance <= 600) isGood = true;
+            else if (targets.goal === 'maint' && Math.abs(netBalance) <= 200) isGood = true;
+
+            if (isGood) {
+                netValEl.className = "text-base font-extrabold text-emerald-400";
+                netBoxEl.className = "bg-emerald-950/30 p-3 rounded-xl border border-emerald-500/40 flex justify-between items-center";
+                netDescEl.innerHTML = `<span class="text-emerald-300 font-bold">${stateWord} ideale</span> per la sessione di oggi!`;
+                techCommentEl.innerHTML = `<i class="fas fa-check-circle text-emerald-400 mr-1"></i><b>Commento Tecnico:</b> Ottimo lavoro! L'apporto energetico e le scorte di glicogeno sono allineate perfettamente all'obiettivo. La prestazione muscolare non subirà cali energetici.`;
+            } else {
+                netValEl.className = "text-base font-extrabold text-amber-400";
+                netBoxEl.className = "bg-slate-900/95 p-3 rounded-xl border border-amber-500/30 flex justify-between items-center";
+                
+                if (netBalance < 0) {
+                    const diffMancanti = Math.abs(netBalance);
+                    netDescEl.innerHTML = `Sei in <b>Deficit</b> di ${diffMancanti} kcal.`;
+                    
+                    // PROPOSTA DI SOLUZIONE NATURALE (SE SI PUO' MANGIARE DI PIU')
+                    if (targets.goal === 'bulk' || targets.goal === 'maint' || (targets.goal === 'cut' && diffMancanti > 400)) {
+                        techCommentEl.innerHTML = `<i class="fas fa-info-circle text-amber-400 mr-1"></i><b>Commento Tecnico & Soluzione:</b> Sei sotto target energetico di ${diffMancanti} kcal. Per colmare il divario in modo pulito e naturale prima o dopo il workout, potresti aggiungere: <b>1 frutto maturo (es. banana) o 2 gallette di riso con un cucchiaino di miele</b> (+120/150 kcal di carbo rapidi), oppure integrare una porzione di frutta secca (mandorle/noci) se ti servono calorie dense.`;
+                    } else {
+                        techCommentEl.innerHTML = `<i class="fas fa-info-circle text-amber-400 mr-1"></i><b>Commento Tecnico:</b> Sei in deficit marcato (obiettivo definizione). Mantieni il focus, assicurati di coprire le proteine e sfrutta l'idratazione per gestire il senso di appetito.`;
+                    }
+                } else {
+                    netDescEl.innerHTML = `Sei in <b>Surplus</b> di +${netBalance} kcal.`;
+                    techCommentEl.innerHTML = `<i class="fas fa-arrow-up text-amber-400 mr-1"></i><b>Commento Tecnico:</b> Hai assunto più calorie del dispendio totale giornaliero. Se il tuo obiettivo è la massa (bulk) è perfetto; se sei in definizione, fai attenzione agli sgarri extra.`;
+                }
+            }
+        }
+    }
+
     const listContainer = document.getElementById('daily-meals-list'); listContainer.innerHTML = '';
     if (logs.length === 0) { listContainer.innerHTML = `<div class="text-center text-xs text-slate-500 py-8 bg-slate-800/80 rounded-2xl border border-slate-700 border-dashed">Nessun pasto registrato in questa data. Premi <b>Registra Pasto</b>!</div>`; return; }
     const mealOrder = ["Colazione", "Pranzo", "Cena", "Spuntino"];
@@ -199,6 +563,7 @@ function renderNutritionDashboard() {
         html += `</div></div>`; listContainer.innerHTML += html;
     });
 }
+
 function timeStrToMinutes(tStr) { if (!tStr || !tStr.includes(':')) return null; const parts = tStr.split(':'); return (parseInt(parts[0]) * 60) + parseInt(parts[1]); }
 function getLoggedDietDates() { let dateSet = new Set(); for (let i = 0; i < localStorage.length; i++) { let k = localStorage.key(i); if (k && k.startsWith('diet_log_')) { let arr = JSON.parse(localStorage.getItem(k)) || []; if (arr.length > 0) dateSet.add(k.replace('diet_log_', '')); } else if (k && k.startsWith('water_log_')) { let w = parseInt(localStorage.getItem(k)) || 0; if (w > 0) dateSet.add(k.replace('water_log_', '')); } } return Array.from(dateSet).sort((a, b) => new Date(b) - new Date(a)); }
 function openFoodDiaryModal() { const currentSelected = document.getElementById('diet-date').value || new Date().toISOString().split('T')[0]; document.getElementById('diary-inspect-date').value = currentSelected; renderDiaryLoggedDatesPills(); renderDiaryModalContent(); document.getElementById('food-diary-modal').classList.remove('hidden'); document.getElementById('food-diary-modal').classList.add('flex'); }
@@ -211,7 +576,9 @@ function renderDiaryLoggedDatesPills() {
 function renderDiaryModalContent() {
     const dStr = document.getElementById('diary-inspect-date').value; const targets = calculateMacroTargets(); const logs = JSON.parse(localStorage.getItem(getDietDateKey(dStr))) || []; const glasses = parseInt(localStorage.getItem(getWaterDateKey(dStr))) || 0; const liters = (glasses * 0.25).toFixed(2).replace(/\.00$/, '.0').replace(/(\.\d)0$/, '$1');
     let totKcal = 0, totP = 0, totC = 0, totF = 0; logs.forEach(x => { totKcal += x.kcal; totP += x.p; totC += x.c; totF += x.f; });
-    const summaryEl = document.getElementById('diary-modal-summary'); summaryEl.innerHTML = `<div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2.5"><span class="text-xs font-bold text-slate-300">Riepilogo del ${formatDate(dStr)}</span><span class="text-sm font-extrabold text-white">${Math.round(totKcal)} <span class="text-xs font-normal text-slate-400">/ ${targets.kcal} kcal</span></span></div><div class="grid grid-cols-4 gap-1.5 text-center text-xs"><div class="bg-slate-800/80 p-2 rounded-lg"><div class="text-[10px] text-blue-400 font-bold">Proteine</div><div class="font-bold text-white mt-0.5">${Math.round(totP)}g</div></div><div class="bg-slate-800/80 p-2 rounded-lg"><div class="text-[10px] text-amber-400 font-bold">Carbo</div><div class="font-bold text-white mt-0.5">${Math.round(totC)}g</div></div><div class="bg-slate-800/80 p-2 rounded-lg"><div class="text-[10px] text-rose-400 font-bold">Grassi</div><div class="font-bold text-white mt-0.5">${Math.round(totF)}g</div></div><div class="bg-slate-800/80 p-2 rounded-lg border border-cyan-500/30"><div class="text-[10px] text-cyan-400 font-bold"><i class="fas fa-tint mr-0.5"></i>Acqua</div><div class="font-bold text-cyan-300 mt-0.5">${glasses} bic. (${liters}L)</div></div></div>`;
+    const workoutBurn = calculateWorkoutCaloriesForDate(dStr);
+    const netBal = Math.round(totKcal) - (targets.tdeeBase + workoutBurn.kcal);
+    const summaryEl = document.getElementById('diary-modal-summary'); summaryEl.innerHTML = `<div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2.5"><span class="text-xs font-bold text-slate-300">Riepilogo del ${formatDate(dStr)}</span><span class="text-sm font-extrabold text-white">${Math.round(totKcal)} <span class="text-xs font-normal text-slate-400">/ ${targets.kcal + workoutBurn.kcal} kcal</span></span></div><div class="grid grid-cols-4 gap-1.5 text-center text-xs"><div class="bg-slate-800/80 p-2 rounded-lg"><div class="text-[10px] text-blue-400 font-bold">Proteine</div><div class="font-bold text-white mt-0.5">${Math.round(totP)}g</div></div><div class="bg-slate-800/80 p-2 rounded-lg"><div class="text-[10px] text-amber-400 font-bold">Carbo</div><div class="font-bold text-white mt-0.5">${Math.round(totC)}g</div></div><div class="bg-slate-800/80 p-2 rounded-lg"><div class="text-[10px] text-rose-400 font-bold">Grassi</div><div class="font-bold text-white mt-0.5">${Math.round(totF)}g</div></div><div class="bg-slate-800/80 p-2 rounded-lg border border-cyan-500/30"><div class="text-[10px] text-cyan-400 font-bold"><i class="fas fa-tint mr-0.5"></i>Acqua</div><div class="font-bold text-cyan-300 mt-0.5">${glasses} bic. (${liters}L)</div></div></div><div class="mt-2 pt-2 border-t border-slate-800 flex justify-between text-[11px] text-slate-400"><span>🔥 Palestra: <b class="text-orange-400">+${workoutBurn.kcal} kcal</b></span><span>Bilancio: <b class="text-white">${netBal > 0 ? '+' : ''}${netBal} kcal</b></span></div>`;
     const mealsEl = document.getElementById('diary-modal-meals'); mealsEl.innerHTML = '';
     if (logs.length === 0) { mealsEl.innerHTML = `<div class="text-center text-xs text-slate-500 py-6 bg-slate-900/50 rounded-xl border border-slate-800">Nessun pasto registrato in questa data.</div>`; return; }
     const mealOrder = ["Colazione", "Pranzo", "Cena", "Spuntino"];
@@ -498,7 +865,7 @@ function requestDeleteFromRoutine(dk, eId) {
         }
     });
 }
-function requestDeleteHistory(hk, eId) { showCustomConfirm("Cancellare tutto lo storico per questo esercizio?", () => { localStorage.removeItem(hk); renderProgressioni(); renderMonthlyCalendar(); const cc=document.getElementById(`chart-container-${eId}`); if(cc&&!cc.classList.contains('hidden')) toggleChart(eId, hk); }); }
+function requestDeleteHistory(hk, eId) { showCustomConfirm("Cancellare tutto lo storico per questo esercizio?", () => { localStorage.removeItem(hk); renderProgressioni(); renderMonthlyCalendar(); renderNutritionDashboard(); const cc=document.getElementById(`chart-container-${eId}`); if(cc&&!cc.classList.contains('hidden')) toggleChart(eId, hk); }); }
 function showCustomConfirm(msg, cb) { document.getElementById('confirm-msg').innerText=msg; confirmCallback=cb; document.getElementById('custom-confirm-modal').classList.remove('hidden'); document.getElementById('custom-confirm-modal').classList.add('flex'); }
 function closeConfirm() { document.getElementById('custom-confirm-modal').classList.add('hidden'); document.getElementById('custom-confirm-modal').classList.remove('flex'); confirmCallback=null; }
 function confirmYes() { if(confirmCallback) confirmCallback(); closeConfirm(); }
@@ -554,6 +921,7 @@ function getExerciseCategoryBadge(exName) {
     const colors = { "Petto": "text-blue-400 bg-blue-500/10 border-blue-500/30", "Dorso e Lombari": "text-cyan-400 bg-cyan-500/10 border-cyan-500/30", "Gambe": "text-rose-400 bg-rose-500/10 border-rose-500/30", "Spalle": "text-amber-400 bg-amber-500/10 border-amber-500/30", "Braccia": "text-purple-400 bg-purple-500/10 border-purple-500/30", "Addome e Core": "text-emerald-400 bg-emerald-500/10 border-emerald-500/30", "Custom": "text-slate-400 bg-slate-700/40 border-slate-600/50" };
     return `<span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${colors[cat] || colors["Custom"]}">${cat}</span>`;
 }
+
 function getQuickEnergyStatus() {
     const logs = JSON.parse(localStorage.getItem(getDietDateKey())) || [];
     const water = parseInt(localStorage.getItem(getWaterDateKey())) || 0;
@@ -588,6 +956,7 @@ function getQuickEnergyStatus() {
     else if (minTimeDiff >= 60 && minTimeDiff <= 240) return { btnClass: 'bg-green-900/60 text-green-400 border border-green-500/50 shadow-[0_0_8px_rgba(74,222,128,0.4)]' };
     else return { btnClass: 'bg-amber-900/60 text-amber-400 border border-amber-500/50 shadow-[0_0_8px_rgba(251,191,36,0.4)]' };
 }
+
 // ==================== RENDER SCHEDA ALLENAMENTO E WARM-UP BUTTON ====================
 function renderWorkouts() {
     const c = document.getElementById('workout-container'); c.innerHTML = '';
@@ -709,7 +1078,6 @@ function scrollToProgDay(dayKey) {
 function setEffort(exId, level) {
     document.getElementById(`inp-effort-${exId}`).value = level;
     
-    // NUOVO: Aggiorna l'etichetta di testo in alto
     const labelEl = document.getElementById(`effort-label-${exId}`);
     if (labelEl) {
         if (level === 'easy') {
@@ -740,6 +1108,10 @@ function setEffort(exId, level) {
 
 // ==================== RENDER PROGRESSIONI E COACH ====================
 function renderProgressioni() {
+    const progEnergyBtn = document.getElementById('prog-energy-btn');
+    if (progEnergyBtn) {
+        progEnergyBtn.className = `${getQuickEnergyStatus().btnClass} rounded-xl w-10 h-10 flex items-center justify-center transition-all hover:scale-105 shrink-0`;
+    }
     const c = document.getElementById('prog-list'); c.innerHTML = '';
     const jumpBar = document.getElementById('prog-days-jump-bar');
     if (jumpBar) jumpBar.innerHTML = '';
@@ -808,7 +1180,6 @@ function renderProgressioni() {
             let coachBadge = '';
 
             if(h.length > 0) {
-                // LOGICA DEL COACH
                 const lastLog = h[0];
                 if (lastLog.effort === 'easy') {
                     let oldW = parseFloat(lastLog.weight) || 0;
@@ -855,7 +1226,6 @@ function renderProgressioni() {
 
             dHtml += `<div class="bg-slate-800/90 rounded-2xl p-3.5 border ${ex.isDomsSub || ex.isPastSub || ex.isSwapSub ? 'border-amber-500/50' : 'border-slate-700/80'} shadow-xl ${ex.deletedFromRoutine && !ex.isPastSub ? 'opacity-75' : ''}">
                 
-                <!-- SOTTO-RIQUADRO INTERNO: Raggruppa Nome, Serie, Reps, Carico, Nota e Registra Serie -->
                 <div class="bg-slate-900/95 rounded-xl p-3.5 border border-blue-500/30 shadow-inner mb-3">
                     <div class="flex justify-between items-start mb-3 border-b border-slate-800 pb-2.5">
                         <div class="pr-2">
@@ -865,7 +1235,6 @@ function renderProgressioni() {
                         ${targetHint}
                     </div>
 
-                    <!-- 3 Campi Vuoti -->
                     <div class="grid grid-cols-3 gap-2.5 mb-3">
                         <div class="text-center">
                             <label class="text-[10px] font-bold text-blue-400 uppercase mb-1 block">Serie</label>
@@ -884,13 +1253,12 @@ function renderProgressioni() {
                     <div class="flex items-end gap-1.5">
                         <button onclick="toggleNote('note-${ex.id}')" title="Aggiungi Nota" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl w-10 h-10 flex items-center justify-center shrink-0 transition-colors"><i class="fas fa-comment-medical text-blue-400"></i></button>
                         
-                        <!-- SELETTORE RPE / SFORZO CON ETICHETTA DINAMICA -->
                         <div class="flex flex-col items-center shrink-0">
                             <div id="effort-label-${ex.id}" class="text-[8px] font-bold text-amber-400 uppercase mb-0.5 tracking-wider">SFORZO: NORMALE</div>
                             <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-700 h-10">
-                                <button onclick="setEffort('${ex.id}', 'easy')" id="eff-easy-${ex.id}" title="Facile / Buffer ampio" class="w-8 h-8 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🟢</button>
-                                <button onclick="setEffort('${ex.id}', 'normal')" id="eff-norm-${ex.id}" title="Giusto / Target raggiunto" class="w-8 h-8 rounded-lg text-sm opacity-100 bg-slate-800 shadow transition-all scale-110">🟡</button>
-                                <button onclick="setEffort('${ex.id}', 'hard')" id="eff-hard-${ex.id}" title="Cedimento / Troppo pesante" class="w-8 h-8 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🔴</button>
+                                <button onclick="setEffort('${ex.id}', 'easy')" id="eff-easy-${ex.id}" title="Facile" class="w-8 h-8 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🟢</button>
+                                <button onclick="setEffort('${ex.id}', 'normal')" id="eff-norm-${ex.id}" title="Giusto" class="w-8 h-8 rounded-lg text-sm opacity-100 bg-slate-800 shadow transition-all scale-110">🟡</button>
+                                <button onclick="setEffort('${ex.id}', 'hard')" id="eff-hard-${ex.id}" title="Pesante" class="w-8 h-8 rounded-lg text-sm opacity-40 hover:opacity-100 transition-all scale-90">🔴</button>
                                 <input type="hidden" id="inp-effort-${ex.id}" value="normal">
                             </div>
                         </div>
@@ -898,11 +1266,9 @@ function renderProgressioni() {
                         <button onclick="saveProgression('${ex.id}', '${hk}', ${ex.isDomsSub || ex.isPastSub || ex.isSwapSub || false})" id="btn-save-${ex.id}" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl h-10 text-xs shadow-lg transition-colors flex items-center justify-center gap-1.5"><i class="fas fa-plus-circle"></i> Salva</button>
                     </div>
                     
-                    <!-- INPUT NOTE E CHIUSURA DEL RIQUADRO INTERNO -->
                     <input type="text" id="note-${ex.id}" placeholder="Scrivi una nota tecnica o sensazione..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs hidden mt-2.5 outline-none focus:border-blue-500">
                 </div>
 
-                <!-- FUORI DAL RIQUADRO INTERNO: Storico Registrazioni Passate & Grafico -->
                 <div class="px-1 mt-4">
                     <div class="flex justify-between items-center mb-1.5">
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider"><i class="fas fa-history mr-1 text-slate-500"></i>Storico Registrazioni</span>
@@ -942,12 +1308,11 @@ function saveProgression(exId, hk, isSubstitute) {
     h.sort((a,b)=>new Date(b.date)-new Date(a.date)); 
     localStorage.setItem(hk, JSON.stringify(h));
     
-    // Ripristina l'effort di default dopo il salvataggio
     setEffort(exId, 'normal');
     
-    renderProgressioni(); renderMonthlyCalendar();
+    renderProgressioni(); renderMonthlyCalendar(); renderNutritionDashboard();
 }
-function deleteLog(hk, i) { let h=JSON.parse(localStorage.getItem(hk))||[]; h.splice(i,1); localStorage.setItem(hk, JSON.stringify(h)); renderProgressioni(); renderMonthlyCalendar(); }
+function deleteLog(hk, i) { let h=JSON.parse(localStorage.getItem(hk))||[]; h.splice(i,1); localStorage.setItem(hk, JSON.stringify(h)); renderProgressioni(); renderMonthlyCalendar(); renderNutritionDashboard(); }
 function formatDate(ds) { if(!ds) return ''; const p = ds.split('-'); if(p.length===3) return `${p[2]}/${p[1]}`; const d=new Date(ds); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`; }
 function toggleChart(eId, hk) { const c=document.getElementById(`chart-container-${eId}`); if(c.classList.contains('hidden')){c.classList.remove('hidden');renderChart(eId, hk);}else{c.classList.add('hidden');if(chartInstances[eId])chartInstances[eId].destroy();} }
 function renderChart(eId, hk) {
@@ -1049,19 +1414,7 @@ function renderMapWithRange() {
     updateMaskGlow('layer-chest-upper', chestUpperScore); updateMaskGlow('layer-chest-lower', chestLowerScore); updateMaskGlow('layer-shoulders-front', frontShoulderScore); updateMaskGlow('layer-arms-front', armsFrontScore); updateMaskGlow('layer-abs', absScore); updateMaskGlow('layer-quads', quadsScore); updateMaskGlow('layer-adductors', adductorsScore);
     updateMaskGlow('layer-back', backScore); updateMaskGlow('layer-lowerback', lowerBackScore); updateMaskGlow('layer-shoulders-rear', rearShoulderScore); updateMaskGlow('layer-arms-rear', armsRearScore); updateMaskGlow('layer-glutes', glutesScore); updateMaskGlow('layer-hamstrings', hamstringsScore); updateMaskGlow('layer-calves', calvesScore);
 }
-// ==================== PRE-WORKOUT ADVISOR ====================
-function openPreWorkoutAdvisorModal() {
-    document.getElementById('preworkout-advisor-modal').classList.remove('hidden');
-    document.getElementById('preworkout-advisor-modal').classList.add('flex');
-    
-    // Qui in futuro potrai chiamare una funzione per generare/aggiornare 
-    // il contenuto del modale (es. renderAdvisorContent())
-}
 
-function closePreWorkoutAdvisorModal() {
-    document.getElementById('preworkout-advisor-modal').classList.add('hidden');
-    document.getElementById('preworkout-advisor-modal').classList.remove('flex');
-}
 // ==================== PRE-WORKOUT ADVISOR ====================
 function openPreWorkoutAdvisorModal() {
     document.getElementById('preworkout-advisor-modal').classList.remove('hidden');
@@ -1077,14 +1430,12 @@ function closePreWorkoutAdvisorModal() {
 function renderAdvisorContent() {
     const content = document.getElementById('preworkout-advisor-content');
     
-    // Usa le funzioni native dell'app per pescare la data visualizzata in UI
     const logs = JSON.parse(localStorage.getItem(getDietDateKey())) || [];
-    const water = parseInt(localStorage.getItem(getWaterDateKey())) || 0; // Dato Idratazione
+    const water = parseInt(localStorage.getItem(getWaterDateKey())) || 0;
     
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-    // Raggruppa gli alimenti per valutare l'INTERO PASTO
     const mealsGrouped = {};
     logs.forEach(log => {
         if (!mealsGrouped[log.mealType]) mealsGrouped[log.mealType] = { items: [], time: log.time };
@@ -1096,7 +1447,6 @@ function renderAdvisorContent() {
     let minTimeDiff = Infinity;
     let mealStats = { kcal: 0, p: 0, c: 0, f: 0, isCheat: false, name: '', timeStr: '', items: [] };
 
-    // Trova il pasto più recente
     for (const [mealType, data] of Object.entries(mealsGrouped)) {
         if (!data.time) continue;
         const [h, m] = data.time.split(':').map(Number);
@@ -1123,7 +1473,6 @@ function renderAdvisorContent() {
         }
     }
 
-    // Logica Semafori 
     let title, message, adviceHtml, colorClass, bgClass, icon;
 
     if (!mostRecentMeal || minTimeDiff > 360) {
@@ -1170,7 +1519,6 @@ function renderAdvisorContent() {
         }
     }
     
-    // --- NUOVA VALUTAZIONE VISIVA IDRATAZIONE ---
     let hydrationAdvice = '';
     if (water === 0) {
         hydrationAdvice = `<div class="mt-2 text-cyan-300 pt-2 border-t border-slate-700/50"><i class="fas fa-exclamation-triangle text-cyan-400 mr-1"></i><b>Allarme Idratazione:</b> Non hai registrato nemmeno un bicchiere d'acqua oggi! Bevi almeno 500ml prima di iniziare.</div>`;
@@ -1180,7 +1528,6 @@ function renderAdvisorContent() {
         hydrationAdvice = `<div class="mt-2 text-emerald-300 pt-2 border-t border-slate-700/50"><i class="fas fa-tint text-cyan-400 mr-1"></i><b>Idratazione Ottima:</b> Hai bevuto ${water} bicchieri d'acqua, i tuoi muscoli sono ben idratati!</div>`;
     }
 
-    // Genera la lista dei cibi consumati nel pasto
     let itemsHtml = '';
     if (mealStats.items && mealStats.items.length > 0) {
         itemsHtml = `<div class="mt-3 pt-3 border-t border-slate-700/50 space-y-1.5 w-full text-left">
@@ -1194,7 +1541,6 @@ function renderAdvisorContent() {
         itemsHtml += `</div>`;
     }
 
-    // Costruzione Grafica UI
     content.innerHTML = `
         <div class="rounded-xl border ${bgClass} p-4 mb-4 text-center transition-all duration-300">
             <i class="fas ${icon} ${colorClass} text-4xl mb-2"></i>
