@@ -1,3 +1,47 @@
+// ==================== CONFIGURAZIONE FIREBASE (fitprogress-23e53) ====================
+const firebaseConfig = {
+  apiKey: "AIzaSyCcZliSUu1hyZxtwhCtmGWiI5QNcSWiUAQ",
+  authDomain: "fitprogress-23e53.firebaseapp.com",
+  projectId: "fitprogress-23e53",
+  storageBucket: "fitprogress-23e53.firebasestorage.app",
+  messagingSenderId: "986438672711",
+  appId: "1:986438672711:web:5595f501ab3831372eac62",
+  measurementId: "G-BZPM1R3BY7"
+};
+
+let fbApp = null;
+let fbAuth = null;
+let fbDb = null;
+let currentCloudUser = null;
+let authModalMode = 'login';
+let isSyncingToCloud = false;
+
+function initFirebaseService() {
+    try {
+        if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
+            if (!firebase.apps.length) {
+                fbApp = firebase.initializeApp(firebaseConfig);
+            } else {
+                fbApp = firebase.app();
+            }
+            fbAuth = firebase.auth();
+            fbDb = firebase.firestore();
+
+            fbAuth.onAuthStateChanged(async (user) => {
+                currentCloudUser = user || null;
+                updateCloudAccountUI();
+
+                if (currentCloudUser) {
+                    await pullUserDataFromCloudOnLogin(currentCloudUser.uid);
+                    checkDailyMidnightSync(false);
+                }
+            });
+        }
+    } catch (err) {
+        console.warn("Firebase non inizializzato:", err);
+    }
+}
+
 // ==================== VARIABILI GLOBALI ====================
 let selectedDbExercise = null;
 let calCurrentDate = new Date();
@@ -16,6 +60,7 @@ let selectedCheatFood = null;
 let currentCheatCombo = 'single';
 
 function getHistKey(exName) { return 'hist_' + exName.toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function getTodayStr() { return new Date().toISOString().split('T')[0]; }
 
 const defaultRoutineData = { name: "La Mia Scheda", days: { giorno1: { title: "Giorno 1", desc: "Inizia ad aggiungere esercizi", exercises: [] } } };
 
@@ -72,8 +117,344 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMonthlyCalendar();
     renderNutritionDashboard();
     updateProfileMetabolicSummary();
+    updateCloudAccountUI();
     switchMainTab('workout');
+
+    initFirebaseService();
+
+    // Controllo cambio giorno periodico (ogni 15 minuti) se l'app resta aperta
+    setInterval(() => {
+        if (currentCloudUser) {
+            checkDailyMidnightSync(false);
+        }
+    }, 15 * 60 * 1000);
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && currentCloudUser) {
+            checkDailyMidnightSync(false);
+        }
+    });
 });
+
+// ==================== AUTENTICAZIONE & CLOUD SYNC (SPARK OTTIMIZZATO) ====================
+function updateCloudAccountUI() {
+    const subEl = document.getElementById('cloud-acc-subtitle');
+    const statusEl = document.getElementById('cloud-status-text');
+    const lastSyncEl = document.getElementById('cloud-last-sync-text');
+    const pillEl = document.getElementById('cloud-status-pill');
+    const outBox = document.getElementById('cloud-logged-out-box');
+    const inBox = document.getElementById('cloud-logged-in-box');
+
+    const lastSyncMeta = JSON.parse(localStorage.getItem('cloud_sync_meta')) || null;
+    if (lastSyncEl) {
+        lastSyncEl.innerText = lastSyncMeta && lastSyncMeta.lastSyncAt
+            ? `Ultimo sync: ${lastSyncMeta.lastSyncAt}`
+            : 'Ultimo sync: Mai';
+    }
+
+    if (currentCloudUser) {
+        if (subEl) subEl.innerText = `Connesso: ${currentCloudUser.email || 'Account attivo'}`;
+        if (statusEl) statusEl.innerText = currentCloudUser.email || 'Utente Autenticato';
+        if (pillEl) {
+            pillEl.className = "text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40";
+            pillEl.innerText = "Cloud Attivo";
+        }
+        if (outBox) outBox.classList.add('hidden');
+        if (inBox) inBox.classList.remove('hidden');
+    } else {
+        if (subEl) subEl.innerText = "Modalità locale • Accedi per sincronizzare";
+        if (statusEl) statusEl.innerText = "Ospite (Solo Locale)";
+        if (pillEl) {
+            pillEl.className = "text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700";
+            pillEl.innerText = "Locale";
+        }
+        if (outBox) outBox.classList.remove('hidden');
+        if (inBox) inBox.classList.add('hidden');
+    }
+}
+
+function openAuthModal(mode = 'login') {
+    switchAuthMode(mode);
+    const errEl = document.getElementById('auth-error-msg');
+    if (errEl) { errEl.classList.add('hidden'); errEl.innerText = ''; }
+    document.getElementById('auth-modal').classList.remove('hidden');
+    document.getElementById('auth-modal').classList.add('flex');
+}
+
+function closeAuthModal() {
+    document.getElementById('auth-modal').classList.add('hidden');
+    document.getElementById('auth-modal').classList.remove('flex');
+}
+
+function switchAuthMode(mode) {
+    authModalMode = mode;
+    const tLogin = document.getElementById('auth-tab-login');
+    const tReg = document.getElementById('auth-tab-register');
+    const title = document.getElementById('auth-modal-title');
+    const submitBtn = document.getElementById('auth-submit-btn');
+
+    if (mode === 'login') {
+        tLogin.className = "py-2 rounded-lg text-xs font-bold bg-blue-600 text-white transition-colors";
+        tReg.className = "py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-colors";
+        title.innerHTML = `<i class="fas fa-sign-in-alt text-blue-400"></i> Accedi al tuo Account`;
+        submitBtn.innerText = "Accedi e Recupera Dati";
+    } else {
+        tReg.className = "py-2 rounded-lg text-xs font-bold bg-emerald-600 text-white transition-colors";
+        tLogin.className = "py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-colors";
+        title.innerHTML = `<i class="fas fa-user-plus text-emerald-400"></i> Crea Nuovo Account`;
+        submitBtn.innerText = "Registrati e Salva su Cloud";
+    }
+}
+
+function showAuthError(msg) {
+    const errEl = document.getElementById('auth-error-msg');
+    if (!errEl) return;
+    errEl.innerText = msg;
+    errEl.classList.remove('hidden');
+}
+
+async function submitEmailAuth() {
+    if (!fbAuth) return showAuthError("Servizio Firebase non disponibile. Controlla la connessione.");
+    const email = (document.getElementById('auth-email').value || '').trim();
+    const password = document.getElementById('auth-password').value || '';
+    const btn = document.getElementById('auth-submit-btn');
+
+    if (!email || !password) {
+        return showAuthError("Inserisci sia email che password.");
+    }
+    if (password.length < 6) {
+        return showAuthError("La password deve avere almeno 6 caratteri.");
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Attendere...";
+
+    try {
+        if (authModalMode === 'login') {
+            await fbAuth.signInWithEmailAndPassword(email, password);
+        } else {
+            await fbAuth.createUserWithEmailAndPassword(email, password);
+        }
+        closeAuthModal();
+    } catch (err) {
+        let friendly = err.message || "Errore durante l'autenticazione.";
+        if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+            friendly = "Email o password non corretti.";
+        } else if (err.code === 'auth/email-already-in-use') {
+            friendly = "Questa email è già registrata. Passa alla scheda Accedi.";
+        } else if (err.code === 'auth/invalid-email') {
+            friendly = "Indirizzo email non valido.";
+        }
+        showAuthError(friendly);
+    } finally {
+        btn.disabled = false;
+        switchAuthMode(authModalMode);
+    }
+}
+
+async function sendPasswordReset() {
+    if (!fbAuth) return showAuthError("Servizio Firebase non disponibile.");
+    const email = (document.getElementById('auth-email').value || '').trim();
+    if (!email) {
+        return showAuthError("Inserisci prima la tua email per ricevere il link di recupero.");
+    }
+    try {
+        await fbAuth.sendPasswordResetEmail(email);
+        showAuthError("Email di recupero inviata! Controlla anche la cartella Spam.");
+    } catch (err) {
+        showAuthError("Impossibile inviare l'email di recupero. Verifica l'indirizzo.");
+    }
+}
+
+function handleGoogleLoginClick() {
+    alert("Su APK Cordova/WebView il popup Google standard viene bloccato da Google. Usa l'accesso con Email e Password (già attivo e funzionante su APK), oppure configura un plugin nativo Google Sign-In con SHA-1 nella tua build.");
+}
+
+async function logoutCloudUser() {
+    if (!fbAuth) return;
+    showCustomConfirm("Vuoi uscire dall'account cloud? I dati locali resteranno su questo dispositivo.", async () => {
+        try {
+            await fbAuth.signOut();
+            currentCloudUser = null;
+            updateCloudAccountUI();
+        } catch (err) {
+            alert("Errore durante il logout.");
+        }
+    });
+}
+
+// Raccoglie i dati locali rilevanti per la sincronizzazione cloud
+function collectLocalSnapshot() {
+    const snapshot = {
+        user_profile: JSON.parse(localStorage.getItem('user_profile') || 'null'),
+        all_saved_routines: JSON.parse(localStorage.getItem('all_saved_routines') || 'null'),
+        active_routine_id: localStorage.getItem('active_routine_id') || null,
+        measurements_history: JSON.parse(localStorage.getItem('measurements_history') || '[]'),
+        exercise_history: {},
+        diet_logs: {},
+        water_logs: {},
+        exercise_prefs: {},
+        updatedAt: new Date().toISOString(),
+        lastSyncDate: getTodayStr()
+    };
+
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+
+        if (key.startsWith('hist_')) {
+            snapshot.exercise_history[key] = JSON.parse(localStorage.getItem(key) || '[]');
+        } else if (key.startsWith('diet_log_')) {
+            snapshot.diet_logs[key] = JSON.parse(localStorage.getItem(key) || '[]');
+        } else if (key.startsWith('water_log_')) {
+            snapshot.water_logs[key] = parseInt(localStorage.getItem(key) || '0', 10);
+        } else if (key.startsWith('order-') || key.endsWith('-sets') || key.endsWith('-reps') || key.endsWith('-rest')) {
+            snapshot.exercise_prefs[key] = localStorage.getItem(key);
+        }
+    }
+
+    return snapshot;
+}
+
+function applyCloudSnapshotToLocal(data) {
+    if (!data) return;
+
+    if (data.user_profile) {
+        localStorage.setItem('user_profile', JSON.stringify(data.user_profile));
+    }
+    if (data.all_saved_routines) {
+        localStorage.setItem('all_saved_routines', JSON.stringify(data.all_saved_routines));
+        allRoutines = data.all_saved_routines;
+    }
+    if (data.active_routine_id && allRoutines[data.active_routine_id]) {
+        activeRoutineId = data.active_routine_id;
+        localStorage.setItem('active_routine_id', activeRoutineId);
+    } else {
+        activeRoutineId = Object.keys(allRoutines)[0];
+        localStorage.setItem('active_routine_id', activeRoutineId);
+    }
+    currentRoutine = allRoutines[activeRoutineId];
+
+    if (Array.isArray(data.measurements_history)) {
+        localStorage.setItem('measurements_history', JSON.stringify(data.measurements_history));
+    }
+
+    if (data.exercise_history && typeof data.exercise_history === 'object') {
+        for (const [hk, arr] of Object.entries(data.exercise_history)) {
+            localStorage.setItem(hk, JSON.stringify(arr || []));
+        }
+    }
+
+    if (data.diet_logs && typeof data.diet_logs === 'object') {
+        for (const [dk, arr] of Object.entries(data.diet_logs)) {
+            localStorage.setItem(dk, JSON.stringify(arr || []));
+        }
+    }
+
+    if (data.water_logs && typeof data.water_logs === 'object') {
+        for (const [wk, val] of Object.entries(data.water_logs)) {
+            localStorage.setItem(wk, String(val || 0));
+        }
+    }
+
+    if (data.exercise_prefs && typeof data.exercise_prefs === 'object') {
+        for (const [pk, val] of Object.entries(data.exercise_prefs)) {
+            if (val !== null && val !== undefined) {
+                localStorage.setItem(pk, String(val));
+            }
+        }
+    }
+
+    // Aggiorna tutte le schermate con i dati recuperati
+    caricaProfilo();
+    renderMeasurements();
+    buildDaysNavigation();
+    renderWorkouts();
+    renderProgressioni();
+    renderMonthlyCalendar();
+    renderNutritionDashboard();
+    updateProfileMetabolicSummary();
+    reopenCurrentTab();
+}
+
+// Recupero dati al login: se esistono dati su Firestore li applica, altrimenti salva i dati locali sul cloud
+async function pullUserDataFromCloudOnLogin(uid) {
+    if (!fbDb || !uid) return;
+    try {
+        const docRef = fbDb.collection('users').doc(uid).collection('appData').doc('snapshot');
+        const snap = await docRef.get();
+        if (snap.exists && snap.data()) {
+            applyCloudSnapshotToLocal(snap.data());
+            const nowStr = new Date().toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
+            localStorage.setItem('cloud_sync_meta', JSON.stringify({
+                lastSyncDate: getTodayStr(),
+                lastSyncAt: nowStr
+            }));
+            updateCloudAccountUI();
+        } else {
+            // Utente nuovo o senza snapshot: carica subito i dati locali sul cloud
+            await syncToCloud(false);
+        }
+    } catch (err) {
+        console.warn("Errore recupero dati cloud al login:", err);
+    }
+}
+
+// Controlla se è cambiata la data rispetto all'ultimo sync (gestione cambio giorno / mezzanotte)
+async function checkDailyMidnightSync(showAlert = false) {
+    if (!currentCloudUser || !fbDb) return;
+    const todayStr = getTodayStr();
+    const meta = JSON.parse(localStorage.getItem('cloud_sync_meta')) || {};
+    if (meta.lastSyncDate !== todayStr) {
+        await syncToCloud(showAlert);
+    }
+}
+
+// Sincronizzazione manuale ("Sincronizza ora") o automatica al cambio giorno
+async function syncToCloud(showFeedback = true) {
+    if (!fbDb || !currentCloudUser) {
+        if (showFeedback) {
+            alert("Accedi con il tuo account Email/Password per sincronizzare i dati sul cloud.");
+        }
+        return;
+    }
+    if (isSyncingToCloud) return;
+    isSyncingToCloud = true;
+
+    const btn = document.getElementById('btn-manual-sync');
+    const origBtnHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sync...`;
+    }
+
+    try {
+        const snapshot = collectLocalSnapshot();
+        await fbDb.collection('users').doc(currentCloudUser.uid).collection('appData').doc('snapshot').set(snapshot, { merge: true });
+
+        const nowStr = new Date().toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
+        localStorage.setItem('cloud_sync_meta', JSON.stringify({
+            lastSyncDate: getTodayStr(),
+            lastSyncAt: nowStr
+        }));
+        updateCloudAccountUI();
+
+        if (showFeedback) {
+            alert("Sincronizzazione cloud completata! Tutti i tuoi progressi sono al sicuro.");
+        }
+    } catch (err) {
+        console.error("Errore sincronizzazione cloud:", err);
+        if (showFeedback) {
+            alert("Errore durante la sincronizzazione cloud. I tuoi dati restano salvati in locale.");
+        }
+    } finally {
+        isSyncingToCloud = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origBtnHtml;
+        }
+    }
+}
 
 // ==================== NAVIGAZIONE PRINCIPALE ====================
 function switchMainTab(tab) {
@@ -96,6 +477,7 @@ function switchMainTab(tab) {
         headerBtn.classList.add('hidden'); headerBtn.classList.remove('flex');
         dynNav.classList.add('hidden');
         updateProfileMetabolicSummary();
+        updateCloudAccountUI();
         renderMonthlyCalendar();
     } else if (tab === 'workout') {
         headerTitle.innerText = currentRoutine.name;
@@ -428,8 +810,8 @@ function calculateWorkoutCaloriesForDate(dateStr) {
     return { kcal: Math.round(totalKcal), sets: totalSets };
 }
 
-function getDietDateKey(customDateStr = null) { return 'diet_log_' + (customDateStr || document.getElementById('diet-date').value || new Date().toISOString().split('T')[0]); }
-function getWaterDateKey(customDateStr = null) { return 'water_log_' + (customDateStr || document.getElementById('diet-date').value || new Date().toISOString().split('T')[0]); }
+function getDietDateKey(customDateStr = null) { return 'diet_log_' + (customDateStr || document.getElementById('diet-date').value || getTodayStr()); }
+function getWaterDateKey(customDateStr = null) { return 'water_log_' + (customDateStr || document.getElementById('diet-date').value || getTodayStr()); }
 function updateWaterCount(delta) { const wKey = getWaterDateKey(); let cur = parseInt(localStorage.getItem(wKey)) || 0; cur = Math.max(0, cur + delta); localStorage.setItem(wKey, cur); renderNutritionDashboard(); }
 
 function renderNutritionDashboard() {
@@ -437,7 +819,7 @@ function renderNutritionDashboard() {
     const warningEl = document.getElementById('diet-profile-warning');
     if (!targets.valid) warningEl.classList.remove('hidden'); else warningEl.classList.add('hidden');
 
-    const currentDateStr = document.getElementById('diet-date').value || new Date().toISOString().split('T')[0];
+    const currentDateStr = document.getElementById('diet-date').value || getTodayStr();
     const workoutBurn = calculateWorkoutCaloriesForDate(currentDateStr);
     const effectiveTargetKcal = targets.kcal + workoutBurn.kcal;
 
@@ -484,7 +866,6 @@ function renderNutritionDashboard() {
     document.getElementById('macro-c-bar').style.width = `${Math.min(100, (totC / (targets.c + Math.round(workoutBurn.kcal / 4))) * 100)}%`;
     document.getElementById('macro-f-bar').style.width = `${Math.min(100, (totF / targets.f) * 100)}%`;
 
-    // --- AGGIORNAMENTO CARD BILANCIO & COMMENTO TECNICO ---
     const totalOut = targets.tdeeBase + workoutBurn.kcal;
     const netBalance = Math.round(totKcal) - totalOut;
 
@@ -533,7 +914,6 @@ function renderNutritionDashboard() {
                     const diffMancanti = Math.abs(netBalance);
                     netDescEl.innerHTML = `Sei in <b>Deficit</b> di ${diffMancanti} kcal.`;
                     
-                    // PROPOSTA DI SOLUZIONE NATURALE (SE SI PUO' MANGIARE DI PIU')
                     if (targets.goal === 'bulk' || targets.goal === 'maint' || (targets.goal === 'cut' && diffMancanti > 400)) {
                         techCommentEl.innerHTML = `<i class="fas fa-info-circle text-amber-400 mr-1"></i><b>Commento Tecnico & Soluzione:</b> Sei sotto target energetico di ${diffMancanti} kcal. Per colmare il divario in modo pulito e naturale prima o dopo il workout, potresti aggiungere: <b>1 frutto maturo (es. banana) o 2 gallette di riso con un cucchiaino di miele</b> (+120/150 kcal di carbo rapidi), oppure integrare una porzione di frutta secca (mandorle/noci) se ti servono calorie dense.`;
                     } else {
@@ -564,9 +944,8 @@ function renderNutritionDashboard() {
     });
 }
 
-function timeStrToMinutes(tStr) { if (!tStr || !tStr.includes(':')) return null; const parts = tStr.split(':'); return (parseInt(parts[0]) * 60) + parseInt(parts[1]); }
 function getLoggedDietDates() { let dateSet = new Set(); for (let i = 0; i < localStorage.length; i++) { let k = localStorage.key(i); if (k && k.startsWith('diet_log_')) { let arr = JSON.parse(localStorage.getItem(k)) || []; if (arr.length > 0) dateSet.add(k.replace('diet_log_', '')); } else if (k && k.startsWith('water_log_')) { let w = parseInt(localStorage.getItem(k)) || 0; if (w > 0) dateSet.add(k.replace('water_log_', '')); } } return Array.from(dateSet).sort((a, b) => new Date(b) - new Date(a)); }
-function openFoodDiaryModal() { const currentSelected = document.getElementById('diet-date').value || new Date().toISOString().split('T')[0]; document.getElementById('diary-inspect-date').value = currentSelected; renderDiaryLoggedDatesPills(); renderDiaryModalContent(); document.getElementById('food-diary-modal').classList.remove('hidden'); document.getElementById('food-diary-modal').classList.add('flex'); }
+function openFoodDiaryModal() { const currentSelected = document.getElementById('diet-date').value || getTodayStr(); document.getElementById('diary-inspect-date').value = currentSelected; renderDiaryLoggedDatesPills(); renderDiaryModalContent(); document.getElementById('food-diary-modal').classList.remove('hidden'); document.getElementById('food-diary-modal').classList.add('flex'); }
 function closeFoodDiaryModal() { document.getElementById('food-diary-modal').classList.add('hidden'); document.getElementById('food-diary-modal').classList.remove('flex'); }
 function renderDiaryLoggedDatesPills() {
     const pillsContainer = document.getElementById('diary-logged-dates-pills'); const dates = getLoggedDietDates(); pillsContainer.innerHTML = '';
@@ -907,7 +1286,7 @@ function closeSwapModal() { document.getElementById('swap-modal').classList.add(
 function confirmSwap(dk, exId, newName) {
     let dbEx = exerciseDB.find(e => e.name === newName);
     if(dbEx) {
-        const targetDate = document.getElementById('prog-date').value || new Date().toISOString().split('T')[0];
+        const targetDate = document.getElementById('prog-date').value || getTodayStr();
         let origEx = currentRoutine.days[dk].exercises.find(e => e.id === exId);
         let nEx = { id: 'swap-'+Date.now(), name: dbEx.name, defaultSets: origEx ? origEx.defaultSets : '3', defaultReps: origEx ? origEx.defaultReps : '10', defaultRest: origEx ? origEx.defaultRest : '90', tech: dbEx.tech, muscles: dbEx.muscles, isSwapSub: true, swapDate: targetDate };
         let idx = currentRoutine.days[dk].exercises.findIndex(e => e.id === exId);
@@ -957,10 +1336,9 @@ function getQuickEnergyStatus() {
     else return { btnClass: 'bg-amber-900/60 text-amber-400 border border-amber-500/50 shadow-[0_0_8px_rgba(251,191,36,0.4)]' };
 }
 
-// ==================== RENDER SCHEDA ALLENAMENTO E WARM-UP BUTTON ====================
 function renderWorkouts() {
     const c = document.getElementById('workout-container'); c.innerHTML = '';
-    const targetDate = document.getElementById('prog-date').value || new Date().toISOString().split('T')[0];
+    const targetDate = document.getElementById('prog-date').value || getTodayStr();
 
     for (const [key, data] of Object.entries(currentRoutine.days)) {
         let sOrder = JSON.parse(localStorage.getItem(`order-${activeRoutineId}-${key}`));
@@ -1064,7 +1442,6 @@ function editRest(id) { document.getElementById(`${id}-rest-display`).classList.
 function saveRest(id) { const v=document.getElementById(`${id}-rest-input`).value.replace('"',''); localStorage.setItem(`${id}-rest`, v); document.getElementById(`${id}-rest-display`).innerText=v+'"'; document.getElementById(`${id}-rest-input`).classList.add('hidden'); document.getElementById(`${id}-rest-display`).classList.remove('hidden'); }
 function handleEnter(e, el) { if(e.key==='Enter') el.blur(); }
 
-// ==================== SCORRIMENTO RAPIDO GIORNI NEI PROGRESSI ====================
 function scrollToProgDay(dayKey) {
     const targetEl = document.getElementById(`prog-section-${dayKey}`);
     if (!targetEl) return;
@@ -1074,7 +1451,6 @@ function scrollToProgDay(dayKey) {
     const yOffset = -125; const y = targetEl.getBoundingClientRect().top + window.pageYOffset + yOffset; window.scrollTo({ top: y, behavior: 'smooth' });
 }
 
-// ==================== GESTIONE SFORZO RPE (COACH) ====================
 function setEffort(exId, level) {
     document.getElementById(`inp-effort-${exId}`).value = level;
     
@@ -1106,7 +1482,6 @@ function setEffort(exId, level) {
     });
 }
 
-// ==================== RENDER PROGRESSIONI E COACH ====================
 function renderProgressioni() {
     const progEnergyBtn = document.getElementById('prog-energy-btn');
     if (progEnergyBtn) {

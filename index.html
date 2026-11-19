@@ -8,6 +8,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <!-- Firebase SDK (Compat per uso diretto in HTML/Vanilla JS & Cordova) -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="pb-24">
@@ -32,7 +36,7 @@
         <!-- ==================== 1. PROFILO ==================== -->
         <div id="main-tab-profilo-content" class="tab-content">
             
-            <!-- TENDINA 1: DATI PERSONALI -->
+            <!-- TENDINA 1: DATI PERSONALI & ACCOUNT CLOUD -->
             <div class="bg-slate-800/90 rounded-2xl border border-slate-700/80 shadow-xl mb-4 overflow-hidden">
                 <button onclick="toggleAccordion('prof-personal-acc')" class="w-full flex justify-between items-center p-4 bg-slate-800 hover:bg-slate-700/70 text-left font-bold text-slate-100 transition-colors outline-none">
                     <div class="flex items-center gap-3">
@@ -40,16 +44,59 @@
                             <i class="fas fa-id-card"></i>
                         </div>
                         <div>
-                            <div class="text-sm font-extrabold text-white">Dati Personali</div>
-                            <div class="text-[11px] text-slate-400 font-normal">Anagrafica, contatti e account</div>
+                            <div class="text-sm font-extrabold text-white">Dati Personali & Account Cloud</div>
+                            <div id="cloud-acc-subtitle" class="text-[11px] text-slate-400 font-normal">Modalità locale • Accedi per sincronizzare</div>
                         </div>
                     </div>
                     <i class="fas fa-chevron-down text-slate-400 transition-transform" id="prof-personal-acc-icon"></i>
                 </button>
                 
                 <div id="prof-personal-acc" class="accordion-content bg-slate-900/60">
-                    <div class="p-4 border-t border-slate-700/60">
-                        <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="p-4 border-t border-slate-700/60 space-y-4">
+                        <!-- BOX ACCOUNT & SINCRONIZZAZIONE CLOUD -->
+                        <div class="bg-slate-950/90 p-3.5 rounded-xl border border-blue-500/30 space-y-3">
+                            <div class="flex items-center justify-between gap-2">
+                                <div>
+                                    <div class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Stato Cloud Firestore</div>
+                                    <div id="cloud-status-text" class="text-xs font-extrabold text-slate-200 mt-0.5">Ospite (Solo Locale)</div>
+                                    <div id="cloud-last-sync-text" class="text-[10px] text-slate-400 mt-0.5">Ultimo sync: Mai</div>
+                                </div>
+                                <span id="cloud-status-pill" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">Locale</span>
+                            </div>
+
+                            <!-- Sezione quando NON loggato -->
+                            <div id="cloud-logged-out-box" class="space-y-2 pt-2 border-t border-slate-800/90">
+                                <p class="text-[11px] text-slate-400 leading-snug">
+                                    Salva i dati in locale durante il giorno e sincronizzali sul cloud al cambio giorno o quando vuoi recuperare tutto su un nuovo telefono.
+                                </p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button type="button" onclick="openAuthModal('login')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow">
+                                        <i class="fas fa-sign-in-alt"></i> Accedi
+                                    </button>
+                                    <button type="button" onclick="openAuthModal('register')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow">
+                                        <i class="fas fa-user-plus"></i> Registrati
+                                    </button>
+                                </div>
+                                <button type="button" onclick="handleGoogleLoginClick()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold py-2 px-3 rounded-xl text-[11px] transition-colors flex items-center justify-center gap-2">
+                                    <i class="fab fa-google text-rose-400"></i> Google (Richiede config APK / Web)
+                                </button>
+                            </div>
+
+                            <!-- Sezione quando LOGGATO -->
+                            <div id="cloud-logged-in-box" class="hidden space-y-2 pt-2 border-t border-slate-800/90">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button type="button" id="btn-manual-sync" onclick="syncToCloud(true)" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow">
+                                        <i class="fas fa-sync-alt"></i> Sincronizza ora
+                                    </button>
+                                    <button type="button" onclick="logoutCloudUser()" class="bg-slate-800 hover:bg-rose-950/60 text-rose-300 border border-slate-700 hover:border-rose-500/40 font-bold py-2.5 px-3 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
+                                        <i class="fas fa-sign-out-alt"></i> Esci
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DATI ANAGRAFICI -->
+                        <div class="grid grid-cols-2 gap-3">
                             <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-700/60">
                                 <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nome</label>
                                 <input type="text" id="prof-nome" placeholder="Il tuo nome" class="w-full bg-transparent text-white font-bold text-sm outline-none">
@@ -62,7 +109,7 @@
                         <button onclick="salvaProfiloEMisure('personal')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs transition-colors flex justify-center items-center gap-2 shadow-lg">
                             <i class="fas fa-save"></i> Salva Dati Personali
                         </button>
-                        <p id="prof-personal-msg" class="text-xs text-emerald-400 text-center hidden mt-2 font-bold">Dati Personali Salvati!</p>
+                        <p id="prof-personal-msg" class="text-xs text-emerald-400 text-center hidden mt-1 font-bold">Dati Personali Salvati!</p>
                     </div>
                 </div>
             </div>
@@ -202,7 +249,6 @@
                             </div>
                         </div>
 
-                        <!-- Legenda esplicativa BMR & TDEE nel Profilo -->
                         <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/90 text-[10px] text-slate-300 space-y-1.5 mb-4 leading-relaxed">
                             <div><b class="text-blue-400">• BMR (Metabolismo Basale):</b> sono le calorie minime che il tuo corpo brucia a riposo assoluto (24h sdraiato) solo per mantenere attivi organi e muscoli.</div>
                             <div><b class="text-amber-400">• TDEE Base (Fabbisogno Giornaliero):</b> è il BMR sommato alle calorie che bruci muovendoti durante la giornata (lavoro, passi, digestione), <i>escluso l'allenamento in palestra</i>.</div>
@@ -386,7 +432,7 @@
                 </div>
             </div>
 
-            <!-- CARD BILANCIO ENERGETICO (CON LEGENDA BMR/TDEE E COMMENTO TECNICO) -->
+            <!-- CARD BILANCIO ENERGETICO -->
             <div class="bg-slate-800/90 rounded-2xl p-4 border border-slate-700/80 shadow-xl mb-4">
                 <div class="flex justify-between items-center mb-3">
                     <div class="flex items-center gap-2">
@@ -414,12 +460,10 @@
                     </div>
                 </div>
 
-                <!-- Spiegazione rapida BMR e TDEE in Alimentazione -->
                 <div class="bg-slate-950/60 px-3 py-2 rounded-xl border border-slate-800/80 text-[10px] text-slate-400 mb-3 leading-snug">
                     <span class="text-blue-400 font-bold">BMR:</span> consumo vitale a riposo assoluto • <span class="text-amber-400 font-bold">TDEE Base:</span> consumo giornaliero attivo (esclusa palestra).
                 </div>
 
-                <!-- Box Risultato Surplus / Deficit -->
                 <div id="bal-net-box" class="bg-slate-900/95 p-3 rounded-xl border border-slate-700/70 flex justify-between items-center">
                     <div>
                         <div class="text-[10px] font-bold text-slate-400 uppercase" id="bal-net-label">Bilancio Odierno (Assunte - Spese)</div>
@@ -430,7 +474,6 @@
                     </div>
                 </div>
 
-                <!-- Commento Tecnico & Soluzioni Alimentari -->
                 <div id="bal-tech-comment" class="mt-2.5 bg-slate-950/90 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-300 leading-relaxed"></div>
             </div>
 
@@ -493,7 +536,6 @@
                 </div>
             </div>
 
-            <!-- BARRA SCORRIMENTO RAPIDO GIORNI (STICKY) -->
             <div class="sticky top-[62px] z-30 bg-[#0b1120]/95 backdrop-blur-md py-2 mb-4 border-b border-slate-800/80">
                 <div class="flex items-center gap-2 overflow-x-auto no-scrollbar" id="prog-days-jump-bar"></div>
             </div>
@@ -502,7 +544,7 @@
         </div>
     </div>
 
-    <!-- BARRA DI NAVIGAZIONE INFERIORE (4 SEZIONI - ALIMENTAZIONE E PROGRESSI INVERTITI) -->
+    <!-- BARRA DI NAVIGAZIONE INFERIORE -->
     <nav class="fixed bottom-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 flex justify-around items-center pb-4 pt-2 z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.4)]">
         <button onclick="switchMainTab('profilo')" id="nav-btn-profilo" class="bottom-nav-btn bottom-nav-inactive flex flex-col items-center p-2 w-1/4 outline-none">
             <i class="fas fa-user text-lg mb-1"></i>
@@ -521,6 +563,44 @@
             <span class="text-[10px] font-bold uppercase tracking-wider">Alimentazione</span>
         </button>
     </nav>
+
+    <!-- ==================== MODALE ACCESSO / REGISTRAZIONE FIREBASE ==================== -->
+    <div id="auth-modal" class="fixed inset-0 bg-slate-950/95 z-[220] hidden flex-col items-center justify-center px-4">
+        <div class="w-full max-w-md bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="auth-modal-title" class="text-lg font-extrabold text-white flex items-center gap-2">
+                    <i class="fas fa-cloud text-blue-400"></i> Accedi al tuo Account
+                </h2>
+                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white p-1 text-2xl"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-700 mb-4">
+                <button type="button" id="auth-tab-login" onclick="switchAuthMode('login')" class="py-2 rounded-lg text-xs font-bold bg-blue-600 text-white transition-colors">Accedi</button>
+                <button type="button" id="auth-tab-register" onclick="switchAuthMode('register')" class="py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-colors">Registrati</button>
+            </div>
+
+            <div class="space-y-3 mb-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Email</label>
+                    <input type="email" id="auth-email" placeholder="nome@esempio.it" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white text-sm outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Password</label>
+                    <input type="password" id="auth-password" placeholder="Almeno 6 caratteri" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white text-sm outline-none focus:border-blue-500">
+                </div>
+            </div>
+
+            <div id="auth-error-msg" class="hidden mb-3 bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs p-2.5 rounded-xl"></div>
+
+            <button type="button" id="auth-submit-btn" onclick="submitEmailAuth()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-xs transition-colors shadow-lg mb-2.5">
+                Accedi e Sincronizza
+            </button>
+
+            <button type="button" onclick="sendPasswordReset()" class="w-full text-[11px] text-blue-400 hover:underline py-1">
+                Hai dimenticato la password? Invia email di recupero
+            </button>
+        </div>
+    </div>
 
     <!-- ==================== MODALE SMART WARM-UP BUILDER ==================== -->
     <div id="warmup-modal" class="fixed inset-0 bg-slate-950/95 z-[165] hidden flex-col items-center pt-6 px-4 overflow-y-auto pb-10">
@@ -593,7 +673,6 @@
                 <button onclick="closeFoodModal()" class="text-slate-400 hover:text-white p-1 text-2xl"><i class="fas fa-times"></i></button>
             </div>
 
-            <!-- Selettore Momento del Pasto + Orario -->
             <div class="grid grid-cols-3 gap-2 mb-4">
                 <div class="col-span-2">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Momento</label>
@@ -610,7 +689,6 @@
                 </div>
             </div>
 
-            <!-- Switcher a 4 Schede -->
             <div class="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700 mb-4">
                 <button id="tab-btn-homefood" onclick="switchFoodModalTab('home')" class="py-2 px-1 rounded-lg text-[11px] font-bold bg-blue-600 text-white shadow transition-all truncate">
                     <i class="fas fa-home mr-0.5"></i>Casa
@@ -626,7 +704,6 @@
                 </button>
             </div>
 
-            <!-- TAB 1: PIATTI DI FAMIGLIA -->
             <div id="food-tab-home" class="space-y-4">
                 <div>
                     <div class="flex gap-2 mb-2">
@@ -699,7 +776,6 @@
                 </div>
             </div>
 
-            <!-- TAB 2: CERCA CONFEZIONATI ONLINE -->
             <div id="food-tab-online" class="hidden space-y-4">
                 <div class="flex gap-2">
                     <input type="text" id="online-food-query" onkeypress="if(event.key==='Enter') searchOnlineFood()" placeholder="Es. Yogurt Fage, Kinder, Tonno..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white text-xs outline-none focus:border-blue-500">
@@ -728,7 +804,6 @@
                 </div>
             </div>
 
-            <!-- TAB 3: PALESTRA & INTEGRATORI -->
             <div id="food-tab-gym" class="hidden space-y-4">
                 <div>
                     <div class="flex gap-2 mb-2">
@@ -770,7 +845,6 @@
                 </div>
             </div>
 
-            <!-- TAB 4: SGARRO E ALCOLICI -->
             <div id="food-tab-cheat" class="hidden space-y-4">
                 <div>
                     <div class="flex gap-2 mb-2">
