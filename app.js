@@ -68,11 +68,43 @@ let allRoutines = JSON.parse(localStorage.getItem('all_saved_routines')) || { "d
 let activeRoutineId = localStorage.getItem('active_routine_id') || "default-routine-id";
 if(!allRoutines[activeRoutineId]) activeRoutineId = Object.keys(allRoutines)[0];
 
+function getSortedDayKeys(daysObj = currentRoutine.days) {
+    if (!daysObj || typeof daysObj !== 'object') return [];
+    return Object.keys(daysObj).sort((a, b) => {
+        const titleA = (daysObj[a] && daysObj[a].title) ? String(daysObj[a].title) : '';
+        const titleB = (daysObj[b] && daysObj[b].title) ? String(daysObj[b].title) : '';
+        const matchA = titleA.match(/\d+/) || a.match(/\d+/);
+        const matchB = titleB.match(/\d+/) || b.match(/\d+/);
+        const numA = matchA ? parseInt(matchA[0], 10) : 999;
+        const numB = matchB ? parseInt(matchB[0], 10) : 999;
+        if (numA !== numB) return numA - numB;
+        return a.localeCompare(b);
+    });
+}
+
+function normalizeAllRoutinesDaysOrder() {
+    if (!allRoutines || typeof allRoutines !== 'object') return;
+    for (const rId of Object.keys(allRoutines)) {
+        const rData = allRoutines[rId];
+        if (!rData || !rData.days) continue;
+        const sortedDays = {};
+        getSortedDayKeys(rData.days).forEach(k => {
+            sortedDays[k] = rData.days[k];
+        });
+        rData.days = sortedDays;
+    }
+    if (allRoutines[activeRoutineId]) {
+        currentRoutine = allRoutines[activeRoutineId];
+    }
+}
+
 function saveAllRoutines() {
+    normalizeAllRoutinesDaysOrder();
     localStorage.setItem('all_saved_routines', JSON.stringify(allRoutines));
     localStorage.setItem('active_routine_id', activeRoutineId);
 }
 let currentRoutine = allRoutines[activeRoutineId];
+normalizeAllRoutinesDaysOrder();
 let chartInstances = {};
 let confirmCallback = null;
 
@@ -334,6 +366,8 @@ function applyCloudSnapshotToLocal(data) {
         localStorage.setItem('active_routine_id', activeRoutineId);
     }
     currentRoutine = allRoutines[activeRoutineId];
+    normalizeAllRoutinesDaysOrder();
+    localStorage.setItem('all_saved_routines', JSON.stringify(allRoutines));
 
     if (Array.isArray(data.measurements_history)) {
         localStorage.setItem('measurements_history', JSON.stringify(data.measurements_history));
@@ -458,13 +492,16 @@ async function syncToCloud(showFeedback = true) {
 
 // ==================== NAVIGAZIONE PRINCIPALE ====================
 function switchMainTab(tab) {
-    ['profilo', 'workout', 'alimentazione', 'progressioni'].forEach(t => {
+    ['profilo', 'workout', 'alimentazione', 'progressioni', 'report'].forEach(t => {
         const btn = document.getElementById(`nav-btn-${t}`);
+        if (!btn) return;
         if(t === tab) btn.classList.replace('bottom-nav-inactive', 'bottom-nav-active');
         else btn.classList.replace('bottom-nav-active', 'bottom-nav-inactive');
-        document.getElementById(`main-tab-${t}-content`).style.display = 'none';
+        const content = document.getElementById(`main-tab-${t}-content`);
+        if (content) content.style.display = 'none';
     });
-    document.getElementById(`main-tab-${tab}-content`).style.display = 'block';
+    const activeContent = document.getElementById(`main-tab-${tab}-content`);
+    if (activeContent) activeContent.style.display = 'block';
 
     const headerTitle = document.getElementById('main-header-title');
     const headerBtn = document.getElementById('header-action-btn');
@@ -501,6 +538,12 @@ function switchMainTab(tab) {
         if (progEnergyBtn) {
             progEnergyBtn.className = `${getQuickEnergyStatus().btnClass} rounded-xl w-10 h-10 flex items-center justify-center transition-all hover:scale-105 shrink-0`;
         }
+    } else if (tab === 'report') {
+        headerTitle.innerText = "Report & Analisi";
+        if(iconBadge) iconBadge.innerHTML = `<i class="fas fa-chart-pie text-sm"></i>`;
+        headerBtn.classList.add('hidden'); headerBtn.classList.remove('flex');
+        dynNav.classList.add('hidden');
+        if (typeof renderReportDashboard === 'function') renderReportDashboard();
     }
 }
 
@@ -1124,7 +1167,7 @@ function openImportModal() {
 function closeBackupModal() { document.getElementById('backup-modal').classList.add('hidden'); document.getElementById('backup-modal').classList.remove('flex'); }
 
 function buildDaysNavigation() {
-    const navContainer = document.getElementById('dynamic-nav-container'); navContainer.innerHTML = ''; const dayKeys = Object.keys(currentRoutine.days);
+    const navContainer = document.getElementById('dynamic-nav-container'); navContainer.innerHTML = ''; const dayKeys = getSortedDayKeys();
     dayKeys.forEach((dKey, index) => {
         const isOnlyDay = dayKeys.length === 1;
         navContainer.innerHTML += `<div class="flex items-center bg-transparent shrink-0"><button onclick="switchDayTab('${dKey}')" id="btn-${dKey}" class="nav-btn ${index === 0 ? 'active' : 'inactive'} pl-4 ${isOnlyDay ? 'pr-4' : 'pr-2'} py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-colors"><span>${currentRoutine.days[dKey].title}</span>${!isOnlyDay ? `<span onclick="event.stopPropagation(); requestDeleteDay('${dKey}')" class="text-slate-300/70 hover:text-red-400 p-1 rounded-full flex items-center justify-center"><i class="fas fa-times text-[10px]"></i></span>` : ''}</button></div>`;
@@ -1136,20 +1179,20 @@ function switchDayTab(dayKey) {
     const activeBtn = document.getElementById(`btn-${dayKey}`); if(activeBtn) { activeBtn.classList.remove('inactive'); activeBtn.classList.add('active'); }
     document.querySelectorAll('.giorno-tab').forEach(giorno => giorno.style.display = 'none'); const targetGiorno = document.getElementById(`tab-${dayKey}`); if(targetGiorno) { targetGiorno.style.display = 'block'; targetGiorno.classList.add('active'); }
 }
-function reopenCurrentTab() { const activeSub = document.querySelector('.nav-btn.active'); if(activeSub && activeSub.id.startsWith('btn-giorno')) { switchDayTab(activeSub.id.replace('btn-', '')); } else { switchDayTab(Object.keys(currentRoutine.days)[0]); } }
+function reopenCurrentTab() { const activeSub = document.querySelector('.nav-btn.active'); if(activeSub && activeSub.id.startsWith('btn-giorno')) { switchDayTab(activeSub.id.replace('btn-', '')); } else { const first = getSortedDayKeys()[0]; if (first) switchDayTab(first); } }
 
 function addNewDayToRoutine() { let nextNum = 1; while(currentRoutine.days[`giorno${nextNum}`]) { nextNum++; } const newDayKey = `giorno${nextNum}`; currentRoutine.days[newDayKey] = { title: `Giorno ${nextNum}`, desc: "Sessione di allenamento", exercises: [] }; saveAllRoutines(); buildDaysNavigation(); renderWorkouts(); renderProgressioni(); switchDayTab(newDayKey); }
 function requestDeleteDay(dk) {
     showCustomConfirm("Vuoi eliminare l'intera giornata?", () => {
         delete currentRoutine.days[dk]; let newDays = {}; let counter = 1;
-        for (const oldKey in currentRoutine.days) {
+        for (const oldKey of getSortedDayKeys(currentRoutine.days)) {
             let newKey = `giorno${counter}`; let dayData = currentRoutine.days[oldKey];
             if (dayData.title.startsWith("Giorno ")) { dayData.title = `Giorno ${counter}`; } newDays[newKey] = dayData;
             if (oldKey !== newKey) { let oldOrder = localStorage.getItem(`order-${activeRoutineId}-${oldKey}`); if (oldOrder) { localStorage.setItem(`order-${activeRoutineId}-${newKey}`, oldOrder); localStorage.removeItem(`order-${activeRoutineId}-${oldKey}`); } }
             counter++;
         }
         currentRoutine.days = newDays; saveAllRoutines(); buildDaysNavigation(); renderWorkouts(); renderProgressioni();
-        const firstDay = Object.keys(currentRoutine.days)[0]; if (firstDay) { switchDayTab(firstDay); }
+        const firstDay = getSortedDayKeys()[0]; if (firstDay) { switchDayTab(firstDay); }
     });
 }
 
@@ -1180,7 +1223,7 @@ function renderRoutinesList() {
         lc.innerHTML += `<div onclick="switchActiveRoutine('${rId}')" class="bg-slate-900 border ${isActive ? 'border-blue-500 ring-1 ring-blue-500' : 'border-slate-700 hover:border-slate-500'} cursor-pointer rounded-2xl p-3.5 flex items-center justify-between"><div><h4 class="font-extrabold text-slate-100">${rData.name} ${isActive ? '<span class="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full ml-2">Attiva</span>' : ''}</h4><p class="text-xs text-slate-400 mt-0.5">${dCount} giornate configurate</p></div><div class="flex items-center gap-2">${Object.keys(allRoutines).length > 1 ? `<button onclick="event.stopPropagation(); deleteRoutine('${rId}')" class="text-red-500 hover:text-red-400 p-2"><i class="fas fa-trash"></i></button>` : ''}</div></div>`;
     }
 }
-function switchActiveRoutine(rId) { activeRoutineId=rId; currentRoutine=allRoutines[rId]; saveAllRoutines(); closeRoutinesManager(); document.getElementById('main-header-title').innerText = currentRoutine.name; buildDaysNavigation(); renderWorkouts(); renderProgressioni(); switchDayTab(Object.keys(currentRoutine.days)[0]); }
+function switchActiveRoutine(rId) { activeRoutineId=rId; currentRoutine=allRoutines[rId]; saveAllRoutines(); closeRoutinesManager(); document.getElementById('main-header-title').innerText = currentRoutine.name; buildDaysNavigation(); renderWorkouts(); renderProgressioni(); switchDayTab(getSortedDayKeys()[0]); }
 function createNewRoutine() {
     const n = document.getElementById('new-routine-name').value; const dc = parseInt(document.getElementById('new-routine-days').value)||4;
     if(!n) return alert("Inserisci un nome.");
@@ -1188,7 +1231,7 @@ function createNewRoutine() {
     allRoutines[nId] = { name: n, days: nDays }; activeRoutineId = nId; currentRoutine = allRoutines[nId];
     saveAllRoutines(); closeRoutinesManager(); document.getElementById('main-header-title').innerText = currentRoutine.name; buildDaysNavigation(); renderWorkouts(); renderProgressioni(); switchDayTab('giorno1');
 }
-function deleteRoutine(rId) { showCustomConfirm("Eliminare scheda?", () => { delete allRoutines[rId]; activeRoutineId=Object.keys(allRoutines)[0]; currentRoutine=allRoutines[activeRoutineId]; saveAllRoutines(); renderRoutinesList(); closeRoutinesManager(); document.getElementById('main-header-title').innerText = currentRoutine.name; buildDaysNavigation(); renderWorkouts(); renderProgressioni(); switchDayTab(Object.keys(currentRoutine.days)[0]); }); }
+function deleteRoutine(rId) { showCustomConfirm("Eliminare scheda?", () => { delete allRoutines[rId]; activeRoutineId=Object.keys(allRoutines)[0]; currentRoutine=allRoutines[activeRoutineId]; saveAllRoutines(); renderRoutinesList(); closeRoutinesManager(); document.getElementById('main-header-title').innerText = currentRoutine.name; buildDaysNavigation(); renderWorkouts(); renderProgressioni(); switchDayTab(getSortedDayKeys()[0]); }); }
 
 function handleExerciseSearch(q) {
     const dp = document.getElementById('add-ex-dropdown'); dp.innerHTML = ''; selectedDbExercise = null;
@@ -1340,7 +1383,8 @@ function renderWorkouts() {
     const c = document.getElementById('workout-container'); c.innerHTML = '';
     const targetDate = document.getElementById('prog-date').value || getTodayStr();
 
-    for (const [key, data] of Object.entries(currentRoutine.days)) {
+    for (const key of getSortedDayKeys()) {
+        const data = currentRoutine.days[key];
         let sOrder = JSON.parse(localStorage.getItem(`order-${activeRoutineId}-${key}`));
         let eList = data.exercises.filter(ex => { if (ex.deletedFromRoutine) return false; if (ex.isSwapSub && ex.swapDate !== targetDate) return false; return true; });
         if(sOrder) { eList.sort((a,b)=>{ let iA=sOrder.indexOf(a.id); let iB=sOrder.indexOf(b.id); return (iA===-1?999:iA)-(iB===-1?999:iB); }); }
@@ -1429,7 +1473,7 @@ function renderWorkouts() {
         }
         html += `</div></div>`; c.innerHTML += html;
     }
-    Object.keys(currentRoutine.days).forEach(k => {
+    getSortedDayKeys().forEach(k => {
         const l=document.getElementById(`list-${k}`);
         if(l) new Sortable(l, { handle:'.drag-handle', animation:150, ghostClass:'sortable-ghost', onEnd:function(){ const nO=Array.from(l.querySelectorAll('.draggable-item')).map(i=>i.getAttribute('data-id')); localStorage.setItem(`order-${activeRoutineId}-${k}`, JSON.stringify(nO)); renderProgressioni(); }});
     });
@@ -1494,7 +1538,8 @@ function renderProgressioni() {
     const targetDate = document.getElementById('prog-date').value;
     let firstRenderedDay = null;
     
-    for (const [dk, data] of Object.entries(currentRoutine.days)) {
+    for (const dk of getSortedDayKeys()) {
+        const data = currentRoutine.days[dk];
         let sO = JSON.parse(localStorage.getItem(`order-${activeRoutineId}-${dk}`));
         let eList = data.exercises.filter(ex => {
             if (ex.isSwapSub && ex.swapDate !== targetDate) return false;
@@ -1741,11 +1786,20 @@ function renderMapWithRange() {
         d.exercises.forEach(ex => {
             const hk = getHistKey(ex.name); if (processedKeys.has(hk)) return; processedKeys.add(hk);
             const l = JSON.parse(localStorage.getItem(hk)) || [];
+            // Usa sempre i muscoli aggiornati da exerciseDB se l'esercizio esiste in libreria
+            const dbMatch = exerciseDB.find(e => e.name.toLowerCase() === ex.name.toLowerCase());
+            const activeMuscles = (dbMatch && dbMatch.muscles) ? dbMatch.muscles : ex.muscles;
+
             targetDates.forEach(td => {
                 const todaysLogs = l.filter(h => h.date === td);
                 if(todaysLogs.length > 0) {
                     exercisesByDate[td].push({ name: ex.name, logs: todaysLogs });
-                    todaysLogs.forEach(log => { const st = parseInt(log.sets) || 0; if(st > 0 && ex.muscles){ for(const [m,sc] of Object.entries(ex.muscles)) s[m] = (s[m]||0) + (sc*st); } });
+                    todaysLogs.forEach(log => {
+                        const st = parseInt(log.sets) || 0;
+                        if(st > 0 && activeMuscles){
+                            for(const [m, sc] of Object.entries(activeMuscles)) s[m] = (s[m] || 0) + (sc * st);
+                        }
+                    });
                 }
             });
         });
@@ -1777,17 +1831,38 @@ function renderMapWithRange() {
     if(exerciseListHtml === '') { listContainer.innerHTML = '<div class="text-xs text-slate-500 text-center italic py-2">Nessun allenamento in questo periodo.</div>'; }
     else { listContainer.innerHTML = exerciseListHtml; }
 
-    let chestUpperScore = s['front-chest-upper']||0; let chestLowerScore = s['front-chest-lower']||0; let frontShoulderScore = s['front-shoulder']||0; let armsFrontScore = (s['front-biceps']||0) + (s['front-forearm']||0); let absScore = (s['front-abs']||0) + (s['front-abs-lower']||0) + (s['front-obliques']||0); let quadsScore = s['front-quads']||0; let adductorsScore = s['front-adductors']||0;
-    let backScore = (s['back-traps']||0) + (s['back-lats']||0); let lowerBackScore = s['back-lowerback']||0; let rearShoulderScore = s['back-shoulder']||0; let armsRearScore = s['back-triceps']||0; let glutesScore = s['back-glutes']||0; let hamstringsScore = s['back-hamstrings']||0; let calvesScore = (s['front-calves']||0) + (s['back-calves']||0);
-    
     const updateMaskGlow = (id, score) => {
         const layer = document.getElementById(id); if(!layer) return; const img = layer.querySelector('img');
-        if(score === 0) { layer.style.opacity = '0'; }
-        else { let color = score <= 4 ? '#facc15' : (score <= 9 ? '#f97316' : '#ef4444'); img.style.filter = `drop-shadow(1000px 0 0 ${color})`; layer.style.opacity = score <= 4 ? '0.6' : (score <= 9 ? '0.8' : '0.95'); }
+        if(!score || score <= 0) {
+            layer.style.opacity = '0';
+            layer.style.visibility = 'hidden';
+            img.style.filter = 'none';
+        } else {
+            let color = score <= 4 ? '#facc15' : (score <= 9 ? '#f97316' : '#ef4444');
+            layer.style.visibility = 'visible';
+            img.style.filter = `drop-shadow(1000px 0 0 ${color})`;
+            layer.style.opacity = score <= 4 ? '0.6' : (score <= 9 ? '0.8' : '0.95');
+        }
     };
 
-    updateMaskGlow('layer-chest-upper', chestUpperScore); updateMaskGlow('layer-chest-lower', chestLowerScore); updateMaskGlow('layer-shoulders-front', frontShoulderScore); updateMaskGlow('layer-arms-front', armsFrontScore); updateMaskGlow('layer-abs', absScore); updateMaskGlow('layer-quads', quadsScore); updateMaskGlow('layer-adductors', adductorsScore);
-    updateMaskGlow('layer-back', backScore); updateMaskGlow('layer-lowerback', lowerBackScore); updateMaskGlow('layer-shoulders-rear', rearShoulderScore); updateMaskGlow('layer-arms-rear', armsRearScore); updateMaskGlow('layer-glutes', glutesScore); updateMaskGlow('layer-hamstrings', hamstringsScore); updateMaskGlow('layer-calves', calvesScore);
+    updateMaskGlow('layer-chest-upper', s['front-chest-upper'] || 0);
+    updateMaskGlow('layer-chest-lower', s['front-chest-lower'] || 0);
+    updateMaskGlow('layer-shoulders-front', s['front-shoulder'] || 0);
+    updateMaskGlow('layer-biceps', s['front-biceps'] || 0);
+    updateMaskGlow('layer-forearms', s['front-forearm'] || 0);
+    updateMaskGlow('layer-abs-upper', s['front-abs'] || 0);
+    updateMaskGlow('layer-abs-lower', s['front-abs-lower'] || 0);
+    updateMaskGlow('layer-obliques', s['front-obliques'] || 0);
+    updateMaskGlow('layer-quads', s['front-quads'] || 0);
+    updateMaskGlow('layer-adductors', s['front-adductors'] || 0);
+    updateMaskGlow('layer-traps', s['back-traps'] || 0);
+    updateMaskGlow('layer-lats', s['back-lats'] || 0);
+    updateMaskGlow('layer-lowerback', s['back-lowerback'] || 0);
+    updateMaskGlow('layer-shoulders-rear', s['back-shoulder'] || 0);
+    updateMaskGlow('layer-triceps', s['back-triceps'] || 0);
+    updateMaskGlow('layer-glutes', s['back-glutes'] || 0);
+    updateMaskGlow('layer-hamstrings', s['back-hamstrings'] || 0);
+    updateMaskGlow('layer-calves', Math.max(s['front-calves'] || 0, s['back-calves'] || 0));
 }
 
 // ==================== PRE-WORKOUT ADVISOR ====================
