@@ -424,57 +424,29 @@ function applyCloudSnapshotToLocal(data) {
     reopenCurrentTab();
 }
 
-// Recupero dati al login: se esistono dati su Firestore li applica solo se il cloud è più recente del locale, altrimenti salva i dati locali sul cloud
+// DEBUG: Recupero dati al login bloccato per sicurezza
 async function pullUserDataFromCloudOnLogin(uid) {
     if (!fbDb || !uid) return;
+
+    console.log("LOGIN RILEVATO: Analisi dati...");
+    const localSnapshot = collectLocalSnapshot();
+
+    // Controlliamo cosa c'è in locale
+    console.log("Dati locali rilevati:", localSnapshot);
+
     try {
         const docRef = fbDb.collection('users').doc(uid).collection('appData').doc('snapshot');
         const snap = await docRef.get();
 
-        const localSnapshot = collectLocalSnapshot();
-        const hasLocalData = localSnapshot.user_profile ||
-                             (localSnapshot.all_saved_routines && Object.keys(localSnapshot.all_saved_routines).length > 0) ||
-                             (localSnapshot.measurements_history && localSnapshot.measurements_history.length > 0) ||
-                             (localSnapshot.diet_logs && Object.keys(localSnapshot.diet_logs).length > 0);
-
         if (snap.exists && snap.data()) {
-            const cloudData = snap.data();
-            const cloudHasData = cloudData.user_profile ||
-                                 (cloudData.all_saved_routines && Object.keys(cloudData.all_saved_routines).length > 0) ||
-                                 (cloudData.measurements_history && cloudData.measurements_history.length > 0);
-
-            // Se il cloud è vuoto ma in locale abbiamo dati, carichiamo il locale sul cloud
-            if (!cloudHasData && hasLocalData) {
-                console.log("Cloud vuoto ma dati presenti in locale: carico il locale sul cloud.");
-                await syncToCloud(false);
-                return;
-            }
-
-            const cloudDate = cloudData.updatedAt ? new Date(cloudData.updatedAt) : new Date(0);
-            const localDate = localSnapshot.updatedAt ? new Date(localSnapshot.updatedAt) : new Date(0);
-
-            // Applica solo se il cloud ha dati ed è più recente del locale
-            if (cloudHasData && cloudDate > localDate) {
-                applyCloudSnapshotToLocal(cloudData);
-                console.log("Dati cloud applicati perché più recenti.");
-            } else {
-                console.log("Dati locali più recenti o cloud privo di dati utili: mantengo il locale e lo sincronizzo.");
-                await syncToCloud(false);
-            }
-
-            const nowStr = new Date().toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
-            localStorage.setItem('cloud_sync_meta', JSON.stringify({
-                lastSyncDate: getTodayStr(),
-                lastSyncAt: nowStr
-            }));
-            updateCloudAccountUI();
+            console.log("Cloud contiene dati, ma per sicurezza NON sovrascriviamo il locale automaticamente.");
+            // Non facciamo nulla automaticamente, lasciamo che sia l'utente a decidere con il bottone sync
         } else {
-            // Utente nuovo o senza snapshot su Firestore: carica subito i dati locali sul cloud
-            console.log("Nessuno snapshot sul cloud: carico i dati locali attuali.");
-            await syncToCloud(false);
+            console.log("Cloud vuoto. Nessuna azione automatica intrapresa per evitare perdita dati.");
         }
+        updateCloudAccountUI();
     } catch (err) {
-        console.warn("Errore recupero dati cloud al login:", err);
+        console.warn("Errore durante il controllo cloud:", err);
     }
 }
 
