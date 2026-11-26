@@ -154,19 +154,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
     initFirebaseService();
 
-    // Controllo cambio giorno periodico (ogni 15 minuti) se l'app resta aperta
+    // Controllo automatico sincronizzazione ogni 15 minuti
     setInterval(() => {
         if (currentCloudUser) {
-            checkDailyMidnightSync(false);
+            autoSyncIfTimePassed();
         }
     }, 15 * 60 * 1000);
 
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible" && currentCloudUser) {
-            checkDailyMidnightSync(false);
+            autoSyncIfTimePassed();
         }
     });
 });
+
+// Sincronizzazione automatica intelligente basata su orario (es. 03:00) o ultima sync
+async function autoSyncIfTimePassed() {
+    const now = new Date();
+    const meta = JSON.parse(localStorage.getItem('cloud_sync_meta')) || {};
+    const lastSyncDate = meta.lastSyncDate;
+    const todayStr = getTodayStr();
+
+    // Se è passato un giorno o se sono le 3 del mattino
+    if (lastSyncDate !== todayStr || (now.getHours() >= 3 && now.getHours() < 4)) {
+        await syncToCloud(false);
+    }
+}
 
 // ==================== AUTENTICAZIONE & CLOUD SYNC (SPARK OTTIMIZZATO) ====================
 function updateCloudAccountUI() {
@@ -411,14 +424,30 @@ function applyCloudSnapshotToLocal(data) {
     reopenCurrentTab();
 }
 
-// Recupero dati al login: se esistono dati su Firestore li applica, altrimenti salva i dati locali sul cloud
+// Recupero dati al login: se esistono dati su Firestore li applica solo se il cloud è più recente del locale, altrimenti salva i dati locali sul cloud
 async function pullUserDataFromCloudOnLogin(uid) {
     if (!fbDb || !uid) return;
     try {
         const docRef = fbDb.collection('users').doc(uid).collection('appData').doc('snapshot');
         const snap = await docRef.get();
+
+        const localSnapshot = collectLocalSnapshot();
+        const localDate = localSnapshot.updatedAt ? new Date(localSnapshot.updatedAt) : new Date(0);
+
         if (snap.exists && snap.data()) {
-            applyCloudSnapshotToLocal(snap.data());
+            const cloudData = snap.data();
+            const cloudDate = cloudData.updatedAt ? new Date(cloudData.updatedAt) : new Date(0);
+
+            // Applica solo se il cloud è più recente
+            if (cloudDate > localDate) {
+                applyCloudSnapshotToLocal(cloudData);
+                console.log("Dati cloud applicati perché più recenti.");
+            } else {
+                console.log("Dati locali più recenti, non sovrascritti dal cloud.");
+                // Se il locale è più recente, forziamo un backup sul cloud per allineare
+                await syncToCloud(false);
+            }
+
             const nowStr = new Date().toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
             localStorage.setItem('cloud_sync_meta', JSON.stringify({
                 lastSyncDate: getTodayStr(),
