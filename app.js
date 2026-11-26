@@ -432,19 +432,33 @@ async function pullUserDataFromCloudOnLogin(uid) {
         const snap = await docRef.get();
 
         const localSnapshot = collectLocalSnapshot();
-        const localDate = localSnapshot.updatedAt ? new Date(localSnapshot.updatedAt) : new Date(0);
+        const hasLocalData = localSnapshot.user_profile ||
+                             (localSnapshot.all_saved_routines && Object.keys(localSnapshot.all_saved_routines).length > 0) ||
+                             (localSnapshot.measurements_history && localSnapshot.measurements_history.length > 0) ||
+                             (localSnapshot.diet_logs && Object.keys(localSnapshot.diet_logs).length > 0);
 
         if (snap.exists && snap.data()) {
             const cloudData = snap.data();
-            const cloudDate = cloudData.updatedAt ? new Date(cloudData.updatedAt) : new Date(0);
+            const cloudHasData = cloudData.user_profile ||
+                                 (cloudData.all_saved_routines && Object.keys(cloudData.all_saved_routines).length > 0) ||
+                                 (cloudData.measurements_history && cloudData.measurements_history.length > 0);
 
-            // Applica solo se il cloud è più recente
-            if (cloudDate > localDate) {
+            // Se il cloud è vuoto ma in locale abbiamo dati, carichiamo il locale sul cloud
+            if (!cloudHasData && hasLocalData) {
+                console.log("Cloud vuoto ma dati presenti in locale: carico il locale sul cloud.");
+                await syncToCloud(false);
+                return;
+            }
+
+            const cloudDate = cloudData.updatedAt ? new Date(cloudData.updatedAt) : new Date(0);
+            const localDate = localSnapshot.updatedAt ? new Date(localSnapshot.updatedAt) : new Date(0);
+
+            // Applica solo se il cloud ha dati ed è più recente del locale
+            if (cloudHasData && cloudDate > localDate) {
                 applyCloudSnapshotToLocal(cloudData);
                 console.log("Dati cloud applicati perché più recenti.");
             } else {
-                console.log("Dati locali più recenti, non sovrascritti dal cloud.");
-                // Se il locale è più recente, forziamo un backup sul cloud per allineare
+                console.log("Dati locali più recenti o cloud privo di dati utili: mantengo il locale e lo sincronizzo.");
                 await syncToCloud(false);
             }
 
@@ -455,7 +469,8 @@ async function pullUserDataFromCloudOnLogin(uid) {
             }));
             updateCloudAccountUI();
         } else {
-            // Utente nuovo o senza snapshot: carica subito i dati locali sul cloud
+            // Utente nuovo o senza snapshot su Firestore: carica subito i dati locali sul cloud
+            console.log("Nessuno snapshot sul cloud: carico i dati locali attuali.");
             await syncToCloud(false);
         }
     } catch (err) {
