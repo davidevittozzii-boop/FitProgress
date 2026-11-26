@@ -448,7 +448,7 @@ async function pullUserDataFromCloudOnLogin(uid) {
             updateCloudAccountUI();
 
             // Ricarichiamo l'interfaccia per mostrare i dati
-            window.location.reload();
+            // window.location.reload(); -> Rimosso per evitare il loop infinito di ricaricamento schermata
         } else {
             console.log("Cloud vuoto: nessun dato da recuperare.");
         }
