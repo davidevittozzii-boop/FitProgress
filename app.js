@@ -424,20 +424,30 @@ function applyCloudSnapshotToLocal(data) {
     reopenCurrentTab();
 }
 
-// Recupero dati forzato al login: se esistono dati sul Cloud, li scarica e sovrascrive il locale (fondamentale per APK)
+// Recupero dati al login: scarica dal cloud SOLO se il localStorage è vuoto (es. prima installazione / nuovo APK)
 async function pullUserDataFromCloudOnLogin(uid) {
     if (!fbDb || !uid) return;
 
-    console.log("LOGIN RILEVATO: Recupero dati dal Cloud...");
+    const localSnapshot = collectLocalSnapshot();
+    const hasLocalData = localSnapshot.user_profile ||
+                         (localSnapshot.all_saved_routines && Object.keys(localSnapshot.all_saved_routines).length > 0) ||
+                         (localSnapshot.measurements_history && localSnapshot.measurements_history.length > 0) ||
+                         (localSnapshot.diet_logs && Object.keys(localSnapshot.diet_logs).length > 0);
+
+    // Se l'app locale è già piena, NON tocchiamo nulla: il locale è sovrano e si salva da solo.
+    if (hasLocalData) {
+        console.log("Dati locali già presenti. Il Cloud non interferisce.");
+        updateCloudAccountUI();
+        return;
+    }
+
+    console.log("Locale vuoto (nuova installazione/APK): recupero dati dal Cloud...");
     try {
         const docRef = fbDb.collection('users').doc(uid).collection('appData').doc('snapshot');
         const snap = await docRef.get();
 
         if (snap.exists && snap.data()) {
             const cloudData = snap.data();
-            console.log("Dati cloud trovati. Applicazione forzata in locale...");
-
-            // Applichiamo i dati del cloud come fonte primaria
             applyCloudSnapshotToLocal(cloudData);
 
             const nowStr = new Date().toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
@@ -446,14 +456,12 @@ async function pullUserDataFromCloudOnLogin(uid) {
                 lastSyncAt: nowStr
             }));
             updateCloudAccountUI();
-
-            // Ricarichiamo l'interfaccia per mostrare i dati
-            // window.location.reload(); -> Rimosso per evitare il loop infinito di ricaricamento schermata
+            console.log("Ripristino da cloud completato con successo.");
         } else {
-            console.log("Cloud vuoto: nessun dato da recuperare.");
+            console.log("Nessun dato sul cloud.");
         }
     } catch (err) {
-        console.warn("Errore durante il recupero forzato dal cloud:", err);
+        console.warn("Errore durante il recupero dal cloud:", err);
     }
 }
 
