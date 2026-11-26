@@ -424,29 +424,36 @@ function applyCloudSnapshotToLocal(data) {
     reopenCurrentTab();
 }
 
-// DEBUG: Recupero dati al login bloccato per sicurezza
+// Recupero dati forzato al login: se esistono dati sul Cloud, li scarica e sovrascrive il locale (fondamentale per APK)
 async function pullUserDataFromCloudOnLogin(uid) {
     if (!fbDb || !uid) return;
 
-    console.log("LOGIN RILEVATO: Analisi dati...");
-    const localSnapshot = collectLocalSnapshot();
-
-    // Controlliamo cosa c'è in locale
-    console.log("Dati locali rilevati:", localSnapshot);
-
+    console.log("LOGIN RILEVATO: Recupero dati dal Cloud...");
     try {
         const docRef = fbDb.collection('users').doc(uid).collection('appData').doc('snapshot');
         const snap = await docRef.get();
 
         if (snap.exists && snap.data()) {
-            console.log("Cloud contiene dati, ma per sicurezza NON sovrascriviamo il locale automaticamente.");
-            // Non facciamo nulla automaticamente, lasciamo che sia l'utente a decidere con il bottone sync
+            const cloudData = snap.data();
+            console.log("Dati cloud trovati. Applicazione forzata in locale...");
+
+            // Applichiamo i dati del cloud come fonte primaria
+            applyCloudSnapshotToLocal(cloudData);
+
+            const nowStr = new Date().toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
+            localStorage.setItem('cloud_sync_meta', JSON.stringify({
+                lastSyncDate: getTodayStr(),
+                lastSyncAt: nowStr
+            }));
+            updateCloudAccountUI();
+
+            // Ricarichiamo l'interfaccia per mostrare i dati
+            window.location.reload();
         } else {
-            console.log("Cloud vuoto. Nessuna azione automatica intrapresa per evitare perdita dati.");
+            console.log("Cloud vuoto: nessun dato da recuperare.");
         }
-        updateCloudAccountUI();
     } catch (err) {
-        console.warn("Errore durante il controllo cloud:", err);
+        console.warn("Errore durante il recupero forzato dal cloud:", err);
     }
 }
 
